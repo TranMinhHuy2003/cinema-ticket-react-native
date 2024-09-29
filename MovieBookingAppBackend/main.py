@@ -10,7 +10,7 @@ from firebase_admin import credentials, firestore
 app = FastAPI()
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(r"../moviebookingapp-435cc-firebase-adminsdk-hjrcs-83dd4beb3d.json")
+    cred = credentials.Certificate(r"C:\Users\user\.vscode\code\IE307\project\MovieBookingApp\moviebookingapp-435cc-firebase-adminsdk-hjrcs-c2c2d253dc.json")
     firebase_admin.initialize_app(cred)
 db = firestore.client()
 
