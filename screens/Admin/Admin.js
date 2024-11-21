@@ -11,6 +11,7 @@ import MoviesManagement from './MoviesManagement';
 import EditMovie from './EditMovie';
 import AddMovie from './AddMovie';
 import TicketsManagement from './TicketsManagement';
+import TicketDetail from './TicketDetail';
 // import TicketsManagement from './TicketsManagement';
 // import SeatsManagement from './SeatsManagement';
 
@@ -27,6 +28,8 @@ function getHiddenDrawer(route) {
     case 'EditMovie':
       return false;
     case 'AddMovie':
+      return false;
+    case 'TicketDetail':
       return false;
   }
 }
@@ -92,6 +95,44 @@ function AdminMovie() {
   );
 }
 
+function AdminTicket() {
+  return (
+    <Stack.Navigator initialRouteName="TicketsManagement">
+      <Stack.Screen 
+        name="TicketsManagement" 
+        component={TicketsManagement} 
+        options={{ 
+          title: 'Quản lý vé', 
+          headerShown: false
+        }} 
+      />
+      <Stack.Screen 
+        name="TicketDetail" 
+        component={TicketDetail} 
+        options={({ navigation }) => ({
+          title: 'Chi tiết vé',
+          headerLeft: () => (
+            <Icon
+              name="arrow-back-outline"
+              size={30}
+              onPress={() => navigation.goBack()}
+              style={{ marginLeft: 15, color: '#ff0000' }}
+            />
+          ),
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#1e1e1e',
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold'
+          }
+        })}
+      />
+    </Stack.Navigator>
+  );
+}
+
 export default function Admin() {
   return (
     <NavigationContainer>
@@ -116,7 +157,7 @@ export default function Admin() {
       >
         <Drawer.Screen name="Bảng điều khiển" component={Dashboard} />
         <Drawer.Screen name="Quản lý phim" component={AdminMovie} />
-        <Drawer.Screen name="Quản lý vé" component={TicketsManagement} />
+        <Drawer.Screen name="Quản lý vé" component={AdminTicket} />
         {/* <Drawer.Screen name="Seats Management" component={SeatsManagement} /> */}
       </Drawer.Navigator>
     </NavigationContainer>
