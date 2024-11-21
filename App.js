@@ -1,11 +1,6 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import MovieListScreen from './screens/MovieListScreen';
-import BookingScreen from './screens/BookingScreen';
-import MovieDetailScreen from './screens/MovieDetailScreen';
-import PaymentScreen from './screens/PaymentScreen';
-import AdminScreen from './screens/AdminScreen';
 import Admin from './screens/Admin/Admin'
 
 const Stack = createNativeStackNavigator();
