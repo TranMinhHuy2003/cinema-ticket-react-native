@@ -87,7 +87,7 @@ const sampleData = {
 
 
 const Booking = ({ route, navigation }) => {
-  const { movieTitle } = route.params;
+  const { movieTitle, moviePoster } = route.params;
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedShowtime, setSelectedShowtime] = useState(null);
   const [selectedSeats, setSelectedSeats] = useState([]);
@@ -179,7 +179,7 @@ const Booking = ({ route, navigation }) => {
 
   const handleShowtimeSelect = (showtime) => {
     setSelectedShowtime(showtime);
-    navigation.navigate('BookingSeats', { selectedShowtime: showtime, selectedTheater, movieTitle });
+    navigation.navigate('BookingSeats', { selectedShowtime: showtime, selectedTheater, movieTitle, moviePoster });
   };
 
   return (

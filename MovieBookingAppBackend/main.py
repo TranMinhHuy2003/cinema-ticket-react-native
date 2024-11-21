@@ -4,10 +4,11 @@ from typing import List, Optional
 from firebase_admin import firestore
 import firebase_admin
 from firebase_admin import credentials, firestore
-from payos import PayOS, PaymentData
-import random
+from payos import PayOS, PaymentData, ItemData
 import os
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 # Tải các biến môi trường từ file .env
 load_dotenv()
@@ -22,14 +23,24 @@ app = FastAPI()
 
 if not firebase_admin._apps:
     cred = credentials.Certificate(r"D:\StudyIT\Nam4Ki1\LTDNT\DoAn\MovieBookingAppBackend\moviebookingapp-435cc-firebase-adminsdk-hjrcs-55258e72df.json")
+    cred = credentials.Certificate(r"D:\StudyIT\Nam4Ki1\LTDNT\DoAn\MovieBookingAppBackend\moviebookingapp-435cc-firebase-adminsdk-hjrcs-55258e72df.json")
     firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 # Cấu hình PayOS Client
-payos_client = PayOS(
+payos = PayOS(
     api_key=PAYOS_API_KEY,  # API key
     client_id=PAYOS_CLIENT_ID,  # Client ID từ PayOS
     checksum_key=PAYOS_CHECKSUM_KEY  # Checksum Key từ PayOS
+)
+
+# Cấu hình CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Cho phép tất cả các nguồn (hoặc có thể chỉ định các nguồn cụ thể như: ['http://localhost:8081'])
+    allow_credentials=True,
+    allow_methods=["*"],  # Cho phép tất cả các phương thức HTTP (GET, POST, PUT, DELETE, ...)
+    allow_headers=["*"],  # Cho phép tất cả các tiêu đề
 )
 
 # Models cho phim và booking
@@ -50,7 +61,7 @@ class Booking(BaseModel):
 
 # Model thanh toán
 class PaymentRequest(BaseModel):
-    order_id: str
+    order_id: int
     amount: int
     description: str
 
@@ -149,30 +160,35 @@ async def get_user_bookings(user_id: str):
         booking_list.append(booking.to_dict())
     return booking_list
 
-# Tạo liên kết thanh toán
+# 8. Tạo liên kết thanh toán
 @app.post("/payment")
 async def create_payment_link(payment_request: PaymentRequest):
-    domain = "http://192.168.221.150:8000"
+    domain = "http://192.168.0.103:8000"
     try:
         payment_data = PaymentData(
             orderCode=payment_request.order_id,
             amount=payment_request.amount,
             description=payment_request.description,
-            # cancelUrl=f"{domain}/cancel.html",
-            # returnUrl=f"{domain}/success.html"
+            cancelUrl=f"{domain}/cancel.html",
+            returnUrl=f"{domain}/success.html"
         )
-        payos_payment = payos_client.createPaymentLink(payment_data)
+        payos_payment = payos.createPaymentLink(payment_data)
         return {"checkoutUrl": payos_payment.checkoutUrl}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Kết quả thanh toán  
-@app.get("/payment_result")
-async def payment_result(success: bool):
-    if success:
-        return {"message": "Thanh toán thành công!"}
-    else:
-        return {"message": "Thanh toán thất bại."}
+# 9. Kết quả thanh toán 
+@app.get("/success.html")
+async def cancel_page():
+    return HTMLResponse(content="<h1>Thanh toán thành công</h1>", status_code=200)
+
+@app.get("/cancel.html")
+async def cancel_page():
+    return HTMLResponse(content="<h1>Thanh toán đã bị hủy</h1>", status_code=200)
+
+@app.get("/favicon.ico")
+async def favicon():
+    return HTMLResponse(content="", status_code=200)
 
 if __name__ == "__main__":
     import uvicorn

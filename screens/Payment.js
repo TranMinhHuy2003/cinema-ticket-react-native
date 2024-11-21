@@ -1,85 +1,180 @@
-// import React from 'react';
-// import { View, Text, Button, Alert } from 'react-native';
-
-// const Payment = ({route}) => {
-//   const { selectedShowtime, selectedTheater, selectedSeats, totalPrice } = route.params; // Nhận amount từ BookingSeats
-//   const createPaymentLink = async () => {
-//     try {
-//       const response = await fetch('http://192.168.0.104:8000/create_payment_link', {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify({
-//           order_id: 'ORDER123', // Thay bằng mã đơn hàng thực tế
-//           amount: totalPrice, // Số tiền (đơn vị: VND)
-//           description: `Thanh toán vé xem phim; Rạp: ${selectedTheater}, Suất chiếu: ${selectedShowtime}, Ghế: ${selectedSeats}`,
-//         }),
-//       });
-
-//       if (!response.ok) {
-//         throw new Error('Failed to create payment link');
-//       }
-
-//       const data = await response.json();
-//       const checkoutUrl = data.checkoutUrl;
-
-//       // Mở liên kết thanh toán
-//       Alert.alert('Thanh toán', 'Đang chuyển đến trang thanh toán...');
-//       Linking.openURL(checkoutUrl);
-//     } catch (error) {
-//       Alert.alert('Lỗi', error.message);
-//     }
-//   };
-
-//   return (
-//     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-//       <Text style={{ fontSize: 18, marginBottom: 20 }}>Thanh toán</Text>
-//       <Button title="Tạo liên kết thanh toán" onPress={createPaymentLink} />
-//     </View>
-//   );
-// };
-
-// export default Payment;
-
-
-import React from 'react';
-import { View, Text, Button, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, Dimensions, Alert } from 'react-native';
+import { WebView } from 'react-native-webview';
 import axios from 'axios';
 
-export default function Payment() {
+const { width } = Dimensions.get("window");
+
+const Payment = ({ route, navigation }) => {
+  const { selectedShowtime, selectedTheater, movieTitle, moviePoster, selectedSeats, totalPrice } = route.params;
+  const [orderId, setOrderId] = useState(null);
+  const [checkoutUrl, setCheckoutUrl] = useState(null);
+  const description = "Mua vé xem phim";
+
+  // Nếu selectedTheater là một object, lấy giá trị cụ thể (ví dụ: theater name)
+  const theaterName = typeof selectedTheater === 'object' ? selectedTheater.theater : selectedTheater;
+
+  // Nếu selectedShowtime là một object, lấy giá trị cụ thể (ví dụ: thời gian chiếu)
+  const showtimeValue = typeof selectedShowtime === 'object' ? selectedShowtime.time : selectedShowtime;
+
+  // Hàm tạo số ngẫu nhiên
+  const generateRandomOrderId = () => {
+    const currentTime = new Date();
+    const formattedTime = currentTime
+      .toISOString()
+      .replace(/[-T:.Z]/g, '')
+      .slice(0, 14); // yyyyMMddHHmmss
+    const randomNumber = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    return parseInt(`${formattedTime}${randomNumber}`, 10); // Trả về giá trị
+  };
+
+  // Tạo orderId mỗi khi vào màn hình
+  useEffect(() => {
+    const newOrderId = generateRandomOrderId();
+    if (newOrderId) {
+      setOrderId(newOrderId.toString()); // Chỉ gọi nếu giá trị hợp lệ
+      console.log(newOrderId)
+    } else {
+      console.error('Failed to generate Order ID');
+    }
+  }, []);
+
   const handlePayment = async () => {
+    if (!orderId) {
+      Alert.alert('Error', 'Order ID chưa được tạo');
+      return;
+    }
+
+    const paymentData = {
+      order_id: orderId,
+      amount: parseInt(totalPrice, 10), // Chuyển amount sang kiểu số
+      description: description,
+    };
+
     try {
-      const paymentData = {
-        // api_key: "7795f82d-8cb6-43a0-b580-f34cf40acb5c",
-        // client_id: "7ed52b8c-5313-4de3-b053-c40f9f2888f0",
-        // checksum_key: "00ff461ef0d7b1ac3bc9b5bfba1eb65cdcf5bfa11450690d53bf235141205737",
-        orderCode: 'order123',
-        amount: 1000,
-        description: 'Payment for product',
-      };
-
-      // Thay `https://api.payos.com/payment` bằng URL API thực tế của PayOS
-      const response = await axios.post('http://192.168.221.150:8000/payment', paymentData);
-
-      if (response.data.success) {
-        Alert.alert(
-          'Payment Success',
-          `Transaction ID: ${response.data.transactionId}`
-        );
+      const response = await axios.post('http://192.168.0.103:8000/payment', paymentData);
+      if (response.data.checkoutUrl) {
+        // Alert.alert('Payment Link', `Checkout URL: ${response.data.checkoutUrl}`);
+        setCheckoutUrl(response.data.checkoutUrl);
       } else {
-        Alert.alert('Payment Failed', response.data.errorMessage);
+        Alert.alert('Error', 'Payment link not generated');
       }
     } catch (error) {
-      console.error('Payment Error:', error);
-      Alert.alert('Error', 'An error occurred during payment.');
+      Alert.alert('Error', error.response?.data?.detail || 'Payment failed');
     }
   };
 
+  // Nếu có checkoutUrl, hiển thị WebView
+  if (checkoutUrl) {
+    return (
+      <WebView
+        source={{ uri: checkoutUrl }}
+        style={{ flex: 1 }}
+        onNavigationStateChange={(navState) => {
+          if (navState.url.includes('/success')) {
+            Alert.alert('Success', 'Thanh toán thành công');
+            setCheckoutUrl(null); // Quay lại màn hình chính
+          } else if (navState.url.includes('/cancel')) {
+            Alert.alert('Cancelled', 'Thanh toán bị hủy');
+            setCheckoutUrl(null); // Quay lại màn hình chính
+          }
+        }}
+      />
+    );
+  }
+
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ fontSize: 18, marginBottom: 20 }}>
-        PayOS Payment Integration
-      </Text>
-      <Button title="Pay Now" onPress={handlePayment} />
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.section}>
+          <Image source={{ uri: moviePoster }} style={styles.poster} />
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.movieTitle}>{movieTitle}</Text>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.title}>
+            Rạp: <Text style={styles.value}>{theaterName}</Text>
+          </Text>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.title}>
+            Suất chiếu: <Text style={styles.value}>{showtimeValue}</Text>
+          </Text>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.title}>
+            Số lượng ghế: <Text style={styles.value}>{selectedSeats.length} ghế</Text>
+          </Text>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.title}>
+            Số ghế: <Text style={styles.value}>{selectedSeats.join(', ')}</Text>
+          </Text>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.title}>
+            Tổng tiền: <Text style={styles.value}>{totalPrice} VND</Text>
+          </Text>
+        </View>
+      </ScrollView>
+
+      <TouchableOpacity style={styles.button} onPress={handlePayment}>
+        <Text style={styles.buttonText}>Thanh toán</Text>
+      </TouchableOpacity>
     </View>
   );
-}
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#1e1e1e',
+  },
+  content: {
+    padding: 20,
+  },
+  section: {
+    marginBottom: 15,
+  },
+  poster: {
+    width: width * 0.4,
+    height: width * 0.6,
+    alignItems:'center',
+    alignSelf: 'center',
+  },
+  movieTitle: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    fontSize: 33,
+    fontWeight: 'bold',
+    color: '#fff'
+  },
+  title: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  value: {
+    color: '#fff',
+    fontSize: 14,
+    marginTop: 5,
+    fontWeight: 'normal'
+  },
+  button: {
+    backgroundColor: '#ff0000',
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+});
+
+export default Payment;

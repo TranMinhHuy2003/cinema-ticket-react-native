@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // import MovieListScreen from './screens/MovieListScreen';
 import BookingTheater from './screens/BookingTheater';
-import MovieDetail from './screens/MovieDetail';
+import MovieDetails from './screens/MovieDetails';
 import BookingSeats from './screens/BookingSeats';
 import Payment from './screens/Payment';
 import SalesPromotionList from './screens/SalesPromotionList';
@@ -35,7 +35,7 @@ export default function App() {
         /> */}
         <Stack.Screen
           name="MovieDetail"
-          component={MovieDetail}
+          component={MovieDetails}
           options={{ title: 'Chi tiết phim' }}
         />
         <Stack.Screen

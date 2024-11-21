@@ -7,7 +7,7 @@ import { API_URL, VID_API } from "@env";
 
 const { width } = Dimensions.get("window");
 
-const MovieDetail = ({ route, navigation }) => {
+const MovieDetails = ({ route, navigation }) => {
   // const { movieId } = route.params;
   // const [movie, setMovie] = useState(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -141,7 +141,7 @@ const MovieDetail = ({ route, navigation }) => {
       <View style={styles.buttonContainer}>
         <Button
           title="Đặt Vé Ngay"
-          onPress={() => navigation.navigate("BookingTheater", { movieTitle: movie.title })}
+          onPress={() => navigation.navigate("BookingTheater", { movieTitle: movie.title, moviePoster: movie.posterUrl })}
           color="#FF0000"
         />
       </View>
@@ -252,4 +252,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MovieDetail;
+export default MovieDetails;

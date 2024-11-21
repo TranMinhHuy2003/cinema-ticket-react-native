@@ -132,7 +132,7 @@ const sampleSeats = [
 // }));
 
 const BookingSeats = ({ route, navigation }) => {
-  const { selectedShowtime, selectedTheater, movieTitle } = route.params;
+  const { selectedShowtime, selectedTheater, movieTitle, moviePoster } = route.params;
   const [selectedSeats, setSelectedSeats] = useState([]);
   const ticketPrice = 100000;
   const vipTicketPrice = 150000;
@@ -163,7 +163,9 @@ const BookingSeats = ({ route, navigation }) => {
       selectedShowtime,
       selectedTheater,
       selectedSeats,
-      totalPrice, // Truyền tổng số tiền
+      movieTitle,
+      moviePoster,
+      totalPrice,
     });
   };
 
