@@ -1,9 +1,10 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useContext } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { AuthContext } from '../../context/AuthContext';
 
 // Import các màn hình
 import Dashboard from './Dashboard';
@@ -11,14 +12,12 @@ import MoviesManagement from './MoviesManagement';
 import EditMovie from './EditMovie';
 import AddMovie from './AddMovie';
 import TicketsManagement from './TicketsManagement';
-import TicketDetail from './TicketDetail';
-// import TicketsManagement from './TicketsManagement';
-// import SeatsManagement from './SeatsManagement';
+import TicketDetail from './TicketDetail'; // Import TicketDetail
 
-// Tạo Drawer Navigator
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 
+// Kiểm tra các route để ẩn hoặc hiện header của Drawer
 function getHiddenDrawer(route) {
   const routeName = getFocusedRouteNameFromRoute(route) ?? 'MoviesManagement';
 
@@ -29,11 +28,12 @@ function getHiddenDrawer(route) {
       return false;
     case 'AddMovie':
       return false;
-    case 'TicketDetail':
-      return false;
+    default:
+      return true;
   }
 }
 
+// Stack Navigator cho quản lý phim
 function AdminMovie() {
   return (
     <Stack.Navigator initialRouteName="MoviesManagement">
@@ -64,8 +64,8 @@ function AdminMovie() {
           },
           headerTintColor: '#fff',
           headerTitleStyle: {
-            fontWeight: 'bold'
-          }
+            fontWeight: 'bold',
+          },
         })}
       />
       <Stack.Screen 
@@ -87,28 +87,29 @@ function AdminMovie() {
           },
           headerTintColor: '#fff',
           headerTitleStyle: {
-            fontWeight: 'bold'
-          }
+            fontWeight: 'bold',
+          },
         })}
       />
     </Stack.Navigator>
   );
 }
 
-function AdminTicket() {
+// Stack Navigator cho quản lý vé
+function AdminTickets() {
   return (
     <Stack.Navigator initialRouteName="TicketsManagement">
-      <Stack.Screen 
-        name="TicketsManagement" 
-        component={TicketsManagement} 
-        options={{ 
-          title: 'Quản lý vé', 
-          headerShown: false
-        }} 
+      <Stack.Screen
+        name="TicketsManagement"
+        component={TicketsManagement}
+        options={{
+          title: 'Quản lý vé',
+          headerShown: false,
+        }}
       />
-      <Stack.Screen 
-        name="TicketDetail" 
-        component={TicketDetail} 
+      <Stack.Screen
+        name="TicketDetail"
+        component={TicketDetail}
         options={({ navigation }) => ({
           title: 'Chi tiết vé',
           headerLeft: () => (
@@ -125,41 +126,57 @@ function AdminTicket() {
           },
           headerTintColor: '#fff',
           headerTitleStyle: {
-            fontWeight: 'bold'
-          }
+            fontWeight: 'bold',
+          },
         })}
       />
     </Stack.Navigator>
   );
 }
 
+// Drawer Navigator cho Admin
 export default function Admin() {
+  const { setIsAuthenticated, setUserRole } = useContext(AuthContext);
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setUserRole(null); // Reset trạng thái người dùng
+  };
+
   return (
-    <NavigationContainer>
-      <Drawer.Navigator 
-        initialRouteName="Dashboard"
-        screenOptions={({ route }) => ({
-          headerStyle: {
-            backgroundColor: '#1e1e1e',
-          },
-          headerTitleStyle: {
-            fontWeight: 'bold',
-            color: '#fff'
-          },
-          drawerStyle: {
-            backgroundColor: '#1e1e1e',
-          },
-          drawerActiveTintColor: '#ff0000',
-          drawerInactiveTintColor: '#fff',
-          headerTintColor: '#ff0000',
-          headerShown: getHiddenDrawer(route)
-        })}
-      >
-        <Drawer.Screen name="Bảng điều khiển" component={Dashboard} />
-        <Drawer.Screen name="Quản lý phim" component={AdminMovie} />
-        <Drawer.Screen name="Quản lý vé" component={AdminTicket} />
-        {/* <Drawer.Screen name="Seats Management" component={SeatsManagement} /> */}
-      </Drawer.Navigator>
-    </NavigationContainer>
+    <Drawer.Navigator
+      initialRouteName="Dashboard"
+      screenOptions={({ route }) => ({
+        headerStyle: {
+          backgroundColor: '#1e1e1e',
+        },
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          color: '#fff',
+        },
+        drawerStyle: {
+          backgroundColor: '#1e1e1e',
+        },
+        drawerActiveTintColor: '#ff0000',
+        drawerInactiveTintColor: '#fff',
+        headerTintColor: '#ff0000',
+        headerShown: getHiddenDrawer(route),
+        headerRight: () => (
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+            <Icon name="log-out-outline" size={24} color="#ff0000" />
+          </TouchableOpacity>
+        ),
+      })}
+    >
+      <Drawer.Screen name="Bảng điều khiển" component={Dashboard} />
+      <Drawer.Screen name="Quản lý phim" component={AdminMovie} />
+      <Drawer.Screen name="Quản lý vé" component={AdminTickets} />
+    </Drawer.Navigator>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  logoutButton: {
+    marginRight: 15,
+  },
+});

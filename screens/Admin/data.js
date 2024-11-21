@@ -1,6 +1,6 @@
 export const movies = [
   {
-    title: 'Inception',
+    title: 'The Matrix',
     description: 'A hacker discovers the reality he lives in is a simulation, leading him on a journey to free humanity from its artificial oppressors.',
     posterUrl: 'https://rukminim2.flixcart.com/image/850/1000/kmns7m80/poster/l/p/f/medium-the-matrix-an-american-maxi-origins-jumbo-medium-size-original-imagfgb6gx9yhwzs.jpeg?q=90&crop=false',
     trailerUrl: 'https://youtu.be/vKQi3bBA1y8?si=qZpO1RcnAFKYa96a',
@@ -211,6 +211,58 @@ export const movies = [
   }
 ];
 
+export const users = [
+  {
+    name: "John Doe",
+    email: "user@example.com",
+    password: "password123",
+    role: "customer",  // or 'admin'
+    birthday: "23/06/2003",
+    phoneNumber: "0908102651",
+    booking: [
+      {
+        bookingId: 'bk001',
+        movie_title: 'Inception',
+        cinema_name: 'Cinema Center',
+        showtime: '2024-09-30T19:00:00',
+        seat_number: 'A1',
+        status: 'Đã xác nhận',
+        type: 'Người lớn',
+        totalPrice: 100,
+      },
+      {
+        bookingId: 'bk002',
+        movie_title: 'Avatar',
+        cinema_name: 'Grand Cinema',
+        showtime: '2024-10-01T18:30:00',
+        seat_number: 'B12',
+        status: 'Đã hủy',
+        type: 'Người lớn',
+        price: 100,
+      },
+      {
+        bookingId: 'bk003',
+        movie_title: 'The Matrix',
+        cinema_name: 'Cinema World',
+        showtime: '2024-10-02T20:00:00',
+        seat_number: 'C5',
+        status: 'Đã xác nhận',
+        type: 'Người lớn',
+        price: 100,
+      },
+    ]
+  },
+  {
+    name: "Admin",
+    email: "admin@example.com",
+    password: "password123",
+    role: "admin",
+    birthday: "23/06/2003",
+    phoneNumber: "0908102651",
+    booking: []
+  },
+]
+
 export const tickets = [
   {
     user_id: 'user_001',
@@ -218,7 +270,7 @@ export const tickets = [
     cinema_name: 'Cinema Center',
     showtime: '2024-09-30T19:00:00',
     seat_number: 'A1',
-    status: 1,
+    status: 'Đã xác nhận',
     type: 'Người lớn',
     price: 100,
     created_at: '2024-09-28T12:00:00',
@@ -230,7 +282,7 @@ export const tickets = [
     cinema_name: 'Grand Cinema',
     showtime: '2024-10-01T18:30:00',
     seat_number: 'B12',
-    status: 0,
+    status: 'Đã hủy',
     type: 'Người lớn',
     price: 100,
     created_at: '2024-09-29T15:00:00',
@@ -242,7 +294,7 @@ export const tickets = [
     cinema_name: 'Cinema World',
     showtime: '2024-10-02T20:00:00',
     seat_number: 'C5',
-    status: 1,
+    status: 'Đã xác nhận',
     type: 'Người lớn',
     price: 100,
     created_at: '2024-09-30T10:00:00',
@@ -254,7 +306,7 @@ export const tickets = [
     cinema_name: 'Cinema Center',
     showtime: '2024-10-03T17:45:00',
     seat_number: 'D8',
-    status: 1,
+    status: 'Đã xác nhận',
     type: 'Người lớn',
     price: 100,
     created_at: '2024-10-01T09:00:00',
@@ -266,7 +318,7 @@ export const tickets = [
     cinema_name: 'Movie Palace',
     showtime: '2024-10-04T21:00:00',
     seat_number: 'A10',
-    status: 0,
+    status: 'Đã hủy',
     type: 'Người lớn',
     price: 100,
     created_at: '2024-10-02T14:30:00',
@@ -278,7 +330,7 @@ export const tickets = [
     cinema_name: 'City Cinema',
     showtime: '2024-10-05T16:00:00',
     seat_number: 'E3',
-    status: 1,
+    status: 'Đã xác nhận',
     type: 'Người lớn',
     price: 100,
     created_at: '2024-10-03T11:00:00',
@@ -290,7 +342,7 @@ export const tickets = [
     cinema_name: 'Cinema World',
     showtime: '2024-10-06T18:15:00',
     seat_number: 'F6',
-    status: 1,
+    status: 'Đã xác nhận',
     type: 'Người lớn',
     price: 100,
     created_at: '2024-10-04T13:30:00',
@@ -302,7 +354,7 @@ export const tickets = [
     cinema_name: 'Cinema Center',
     showtime: '2024-10-07T20:45:00',
     seat_number: 'B2',
-    status: 1,
+    status: 'Đã xác nhận',
     type: 'Người lớn',
     price: 100,
     created_at: '2024-10-05T15:20:00',
@@ -314,7 +366,7 @@ export const tickets = [
     cinema_name: 'Grand Cinema',
     showtime: '2024-10-08T22:30:00',
     seat_number: 'G10',
-    status: 0,
+    status: 'Đã hủy',
     type: 'Người lớn',
     price: 100,
     created_at: '2024-10-06T12:00:00',
@@ -326,12 +378,10 @@ export const tickets = [
     cinema_name: 'Movie Palace',
     showtime: '2024-10-09T19:00:00',
     seat_number: 'H4',
-    status: 1,
+    status: 'Đã xác nhận',
     type: 'Người lớn',
     price: 100,
     created_at: '2024-10-07T17:30:00',
     updated_at: '2024-10-07T17:45:00'
   }
 ];
-
-export const users = [];
