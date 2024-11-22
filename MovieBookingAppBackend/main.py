@@ -4,15 +4,33 @@ from typing import List, Optional
 from firebase_admin import firestore
 import firebase_admin
 from firebase_admin import credentials, firestore
+from payos import PayOS, PaymentData
+import random
+import os
+from dotenv import load_dotenv
 
+# Tải các biến môi trường từ file .env
+load_dotenv()
+
+# Lấy thông tin từ biến môi trường
+PAYOS_API_KEY = os.getenv("PAYOS_API_KEY")
+PAYOS_CLIENT_ID = os.getenv("PAYOS_CLIENT_ID")
+PAYOS_CHECKSUM_KEY = os.getenv("PAYOS_CHECKSUM_KEY")
 
 # Khởi tạo ứng dụng FastAPI
 app = FastAPI()
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(r"C:\Users\user\.vscode\code\IE307\project\MovieBookingApp\moviebookingapp-435cc-firebase-adminsdk-hjrcs-c2c2d253dc.json")
+    cred = credentials.Certificate(r"D:\StudyIT\Nam4Ki1\LTDNT\DoAn\MovieBookingAppBackend\moviebookingapp-435cc-firebase-adminsdk-hjrcs-55258e72df.json")
     firebase_admin.initialize_app(cred)
 db = firestore.client()
+
+# Cấu hình PayOS Client
+payos_client = PayOS(
+    api_key=PAYOS_API_KEY,  # API key
+    client_id=PAYOS_CLIENT_ID,  # Client ID từ PayOS
+    checksum_key=PAYOS_CHECKSUM_KEY  # Checksum Key từ PayOS
+)
 
 # Models cho phim và booking
 class Movie(BaseModel):
@@ -29,6 +47,12 @@ class Booking(BaseModel):
     movie_id: str
     time_id: str
     seats: List[str]
+
+# Model thanh toán
+class PaymentRequest(BaseModel):
+    order_id: str
+    amount: int
+    description: str
 
 # Mock admin authentication function
 def get_current_admin_user():
@@ -124,6 +148,31 @@ async def get_user_bookings(user_id: str):
     for booking in bookings:
         booking_list.append(booking.to_dict())
     return booking_list
+
+# Tạo liên kết thanh toán
+@app.post("/payment")
+async def create_payment_link(payment_request: PaymentRequest):
+    domain = "http://192.168.221.150:8000"
+    try:
+        payment_data = PaymentData(
+            orderCode=payment_request.order_id,
+            amount=payment_request.amount,
+            description=payment_request.description,
+            # cancelUrl=f"{domain}/cancel.html",
+            # returnUrl=f"{domain}/success.html"
+        )
+        payos_payment = payos_client.createPaymentLink(payment_data)
+        return {"checkoutUrl": payos_payment.checkoutUrl}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Kết quả thanh toán  
+@app.get("/payment_result")
+async def payment_result(success: bool):
+    if success:
+        return {"message": "Thanh toán thành công!"}
+    else:
+        return {"message": "Thanh toán thất bại."}
 
 if __name__ == "__main__":
     import uvicorn
