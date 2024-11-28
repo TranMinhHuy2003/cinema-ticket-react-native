@@ -1,141 +1,55 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, FlatList, Button, Alert, StyleSheet, Dimensions, ScrollView } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions, ScrollView } from "react-native";
+import axios from "axios";
 
 const { width } = Dimensions.get("window");
 
-const sampleSeats = [
-  { seat: "A1", available: true, type: "normal" },
-  { seat: "A2", available: false, type: "normal" },
-  { seat: "A3", available: true, type: "normal" },
-  { seat: "A4", available: true, type: "normal" },
-  { seat: "A5", available: false, type: "normal" },
-  { seat: "A6", available: true, type: "normal" },
-  { seat: "A7", available: true, type: "normal" },
-  { seat: "A8", available: false, type: "normal" },
-  { seat: "A9", available: false, type: "normal" },
-  { seat: "A10", available: true, type: "normal" },
-  { seat: "A11", available: true, type: "normal" },
-  { seat: "A12", available: false, type: "normal" },
-  { seat: "A13", available: true, type: "normal" },
-  { seat: "A14", available: true, type: "normal" },
-  { seat: "A15", available: true, type: "normal" },
-  { seat: "B1", available: true, type: "normal" },
-  { seat: "B2", available: false, type: "normal" },
-  { seat: "B3", available: true, type: "normal" },
-  { seat: "B4", available: true, type: "normal" },
-  { seat: "B5", available: false, type: "normal" },
-  { seat: "B6", available: true, type: "normal" },
-  { seat: "B7", available: true, type: "normal" },
-  { seat: "B8", available: false, type: "normal" },
-  { seat: "B9", available: false, type: "normal" },
-  { seat: "B10", available: true, type: "normal" },
-  { seat: "B11", available: true, type: "normal" },
-  { seat: "B12", available: false, type: "normal" },
-  { seat: "B13", available: true, type: "normal" },
-  { seat: "B14", available: true, type: "normal" },
-  { seat: "B15", available: true, type: "normal" },
-  { seat: "C1", available: true, type: "normal" },
-  { seat: "C2", available: false, type: "normal" },
-  { seat: "C3", available: false, type: "normal" },
-  { seat: "C4", available: true, type: "normal" },
-  { seat: "C5", available: false, type: "normal" },
-  { seat: "C6", available: true, type: "normal" },
-  { seat: "C7", available: true, type: "normal" },
-  { seat: "C8", available: false, type: "normal" },
-  { seat: "C9", available: false, type: "normal" },
-  { seat: "C10", available: true, type: "normal" },
-  { seat: "C11", available: false, type: "normal" },
-  { seat: "C12", available: true, type: "normal" },
-  { seat: "C13", available: true, type: "normal" },
-  { seat: "C14", available: true, type: "normal" },
-  { seat: "C15", available: true, type: "normal" },
-  { seat: "D1", available: true, type: "normal" },
-  { seat: "D2", available: false, type: "normal" },
-  { seat: "D3", available: true, type: "normal" },
-  { seat: "D4", available: false, type: "normal" },
-  { seat: "D5", available: false, type: "normal" },
-  { seat: "D6", available: true, type: "normal" },
-  { seat: "D7", available: true, type: "normal" },
-  { seat: "D8", available: false, type: "normal" },
-  { seat: "D9", available: false, type: "normal" },
-  { seat: "D10", available: false, type: "normal" },
-  { seat: "D11", available: true, type: "normal" },
-  { seat: "D12", available: true, type: "normal" },
-  { seat: "D13", available: true, type: "normal" },
-  { seat: "D14", available: true, type: "normal" },
-  { seat: "D15", available: true, type: "normal" },
-  { seat: "E1", available: true, type: "vip" },
-  { seat: "E2", available: false, type: "vip" },
-  { seat: "E3", available: true, type: "vip" },
-  { seat: "E4", available: true, type: "vip" },
-  { seat: "E5", available: false, type: "vip" },
-  { seat: "E6", available: true, type: "vip" },
-  { seat: "E7", available: true, type: "vip" },
-  { seat: "E8", available: false, type: "vip" },
-  { seat: "E9", available: false, type: "vip" },
-  { seat: "E10", available: true, type: "vip" },
-  { seat: "E11", available: true, type: "vip" },
-  { seat: "E12", available: true, type: "vip" },
-  { seat: "E13", available: true, type: "vip" },
-  { seat: "E14", available: true, type: "vip" },
-  { seat: "E15", available: true, type: "vip" },
-  { seat: "F1", available: true, type: "vip" },
-  { seat: "F2", available: false, type: "vip" },
-  { seat: "F3", available: false, type: "vip" },
-  { seat: "F4", available: true, type: "vip" },
-  { seat: "F5", available: false, type: "vip" },
-  { seat: "F6", available: true, type: "vip" },
-  { seat: "F7", available: true, type: "vip" },
-  { seat: "F8", available: false, type: "vip" },
-  { seat: "F9", available: false, type: "vip" },
-  { seat: "F10", available: true, type: "vip" },
-  { seat: "F11", available: true, type: "vip" },
-  { seat: "F12", available: false, type: "vip" },
-  { seat: "F13", available: false, type: "vip" },
-  { seat: "F14", available: true, type: "vip" },
-  { seat: "F15", available: true, type: "vip" },
-  { seat: "G1", available: true, type: "normal" },
-  { seat: "G2", available: false, type: "normal" },
-  { seat: "G3", available: true, type: "normal" },
-  { seat: "G4", available: true, type: "normal" },
-  { seat: "G5", available: false, type: "normal" },
-  { seat: "G6", available: false, type: "normal" },
-  { seat: "G7", available: true, type: "normal" },
-  { seat: "G8", available: false, type: "normal" },
-  { seat: "G9", available: false, type: "normal" },
-  { seat: "G10", available: true, type: "normal" },
-  { seat: "G11", available: false, type: "normal" },
-  { seat: "G12", available: true, type: "normal" },
-  { seat: "G13", available: true, type: "normal" },
-  { seat: "G14", available: false, type: "normal" },
-  { seat: "G15", available: true, type: "normal" },
-  { seat: "H1", available: true, type: "normal" },
-  { seat: "H2", available: false, type: "normal" },
-  { seat: "H3", available: true, type: "normal" },
-  { seat: "H4", available: true, type: "normal" },
-  { seat: "H5", available: false, type: "normal" },
-  { seat: "H6", available: false, type: "normal" },
-  { seat: "H7", available: true, type: "normal" },
-  { seat: "H8", available: false, type: "normal" },
-  { seat: "H9", available: false, type: "normal" },
-  { seat: "H10", available: true, type: "normal" },
-  { seat: "H11", available: true, type: "normal" },
-  { seat: "H12", available: false, type: "normal" },
-  { seat: "H13", available: true, type: "normal" },
-  { seat: "H14", available: true, type: "normal" },
-  { seat: "H15", available: true, type: "normal" },
-];
-
-// const sampleSeats = Array.from({ length: 150 }, (_, i) => ({
-//   seat: `A ${Math.floor(i / 15) + 1} Seat ${(i % 15) + 1}`,
-//   available: i % 5 !== 0,
-// }));
-
 const BookingSeats = ({ route, navigation }) => {
-  const { selectedShowtime, selectedTheater, movieTitle } = route.params;
+  const { originShowtime, selectedShowtime, selectedTheater, selectedHall, selectedDate, movieId, movieTitle, moviePoster } = route.params;
+  const parsedSelectedDate = new Date(route.params.selectedDate);
+  const [seats, setSeats] = useState([]);
   const [selectedSeats, setSelectedSeats] = useState([]);
   const ticketPrice = 100000;
   const vipTicketPrice = 150000;
+
+  // Gọi API để lấy danh sách ghế
+  useEffect(() => {
+    const fetchSeats = async () => {
+      try {
+        const response = await axios.get(`http://192.168.0.103:8000/movies/${movieId}`);
+
+        // Kiểm tra showtimes là một object
+        if (typeof response.data.showtimes === "object" && response.data.showtimes !== null) {
+          const showtimesArray = Object.values(response.data.showtimes);
+
+          const selectedShowtimeData = showtimesArray.find(showtime => {
+            // Chuyển start_time và selectedDate thành dạng ngày (không giờ)
+            const startDate = new Date(showtime.start_time).toLocaleDateString();
+            const selectedDateFormatted = parsedSelectedDate.toLocaleDateString();
+
+            // So sánh ngày và thời gian
+            const dateMatch = startDate === selectedDateFormatted;
+            const theaterMatch = showtime.cinema.cinema_name === selectedTheater;
+            const hallMatch = showtime.cinema.hall_name === selectedHall;
+
+            return dateMatch && theaterMatch && hallMatch;
+          });
+
+          if (selectedShowtimeData) {
+            setSeats(selectedShowtimeData.seats);
+          } else {
+            console.log("Không tìm thấy suất chiếu phù hợp");
+          }
+        } else {
+          console.log("showtimes không phải là một object hợp lệ", response.data.showtimes);
+        }
+      } catch (error) {
+        console.error("Error fetching seats:", error);
+      }
+    };
+
+    fetchSeats();
+  }, [movieId, selectedShowtime, selectedTheater, selectedHall, selectedDate]);
 
   const toggleSeatSelection = (seat) => {
     if (selectedSeats.includes(seat)) {
@@ -147,23 +61,33 @@ const BookingSeats = ({ route, navigation }) => {
 
   const calculateTotalPrice = () => {
     return selectedSeats.reduce((total, seat) => {
-      const seatType = sampleSeats.find((s) => s.seat === seat)?.type;
+      const seatType = seats.find((s) => s.seat === seat)?.type;
       const price = seatType === "vip" ? vipTicketPrice : ticketPrice;
       return total + price;
     }, 0);
   };
 
-  const formatCurrency = (number) => {
-    return number.toLocaleString("vi-VN");
+  // Format price as VND
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(price);
   };
 
   const handleBooking = () => {
     const totalPrice = calculateTotalPrice();
     navigation.navigate("Payment", {
       selectedShowtime,
+      originShowtime,
+      selectedDate: parsedSelectedDate.toISOString(),
       selectedTheater,
+      selectedHall,
       selectedSeats,
-      totalPrice, // Truyền tổng số tiền
+      movieId,
+      movieTitle,
+      moviePoster,
+      totalPrice,
     });
   };
 
@@ -171,55 +95,61 @@ const BookingSeats = ({ route, navigation }) => {
     <View style={{ flex: 1 }}>
       <View style={styles.container}>
         <Text style={styles.header}>Chọn ghế ngồi</Text>
-        <ScrollView horizontal>
-          <FlatList
-            data={sampleSeats}
-            numColumns={15}
-            keyExtractor={(item) => item.seat}
-            ListHeaderComponent={() => (
-              <View style={styles.screenBox}>
-                <Text style={styles.screenText}>Màn hình</Text>
-              </View>
-            )}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.seat,
-                  item.type === "vip"
-                    ? item.available
+        {seats.length === 0 ? (
+          <Text style={styles.noSeatsText}>Không có suất chiếu phù hợp. Vui lòng chọn lại.</Text>
+        ) : (
+          <ScrollView horizontal>
+            <FlatList
+              data={seats}
+              numColumns={10}
+              keyExtractor={(item) => item.seat} // Sử dụng `seat` làm key
+              ListHeaderComponent={() => (
+                <View style={styles.screenBox}>
+                  <Text style={styles.screenText}>Màn hình</Text>
+                </View>
+              )}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.seat,
+                    // Kiểm tra loại ghế (VIP hay bình thường) và trạng thái (có sẵn hay không)
+                    item.type === "vip"
+                      ? item.available
+                        ? selectedSeats.includes(item.seat)
+                          ? styles.selectedSeat
+                          : styles.vipSeat
+                        : styles.boughtSeat
+                      : item.available
                       ? selectedSeats.includes(item.seat)
                         ? styles.selectedSeat
-                        : styles.vipSeat
-                      : styles.boughtSeat
-                    : item.available
-                    ? selectedSeats.includes(item.seat)
-                      ? styles.selectedSeat
-                      : styles.unselectedSeat
-                    : styles.boughtSeat,
-                ]}
-                onPress={() => item.available && toggleSeatSelection(item.seat)}
-                disabled={!item.available}
-              >
-                {!item.available && (
-                  <View style={styles.boughtSeatCross}>
-                    <View style={styles.crossLine1} />
-                    <View style={styles.crossLine2} />
-                  </View>
-                )}
-                <Text style={styles.seatText}>{item.seat}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </ScrollView>
+                        : styles.unselectedSeat
+                      : styles.boughtSeat,
+                  ]}
+                  onPress={() => item.available && toggleSeatSelection(item.seat)} // Chỉ cho phép chọn ghế có sẵn
+                  disabled={!item.available} // Ghế không có sẵn không thể chọn
+                >
+                  {!item.available && (
+                    <View style={styles.boughtSeatCross}>
+                      <View style={styles.crossLine1} />
+                      <View style={styles.crossLine2} />
+                    </View>
+                  )}
+                  <Text style={styles.seatText}>{item.seat}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </ScrollView>
+        )}
+
         <View style={styles.legendContainer}>
-          <View style={[styles.legendBox, styles.availableSeat]} />
+          <View style={[styles.legendBox, styles.unselectedSeat]} />
           <Text style={styles.legendText}>Ghế trống</Text>
           <View style={[styles.legendBox, styles.vipSeat]} />
           <Text style={styles.legendText}>Ghế VIP</Text>
           <View style={[styles.legendBox, styles.selectedSeat]} />
           <Text style={styles.legendText}>Ghế đã chọn</Text>
           <View style={[styles.legendBox, styles.boughtSeat]}>
-          <View style={styles.legendCross}>
+            <View style={styles.legendCross}>
               <View style={styles.legendLine1} />
               <View style={styles.legendLine2} />
             </View>
@@ -231,12 +161,10 @@ const BookingSeats = ({ route, navigation }) => {
         <View>
           <Text style={styles.title}>{movieTitle}</Text>
           <Text style={styles.footerText}>Số ghế đã chọn: {selectedSeats.length} ghế</Text>
-          <Text style={styles.moneyText}>
-            {formatCurrency(calculateTotalPrice())} đ
-          </Text>
+          <Text style={styles.moneyText}>{formatPrice(calculateTotalPrice())}</Text>
         </View>
-        <TouchableOpacity 
-          style={selectedSeats.length > 0 ? styles.paymentButton: styles.paymentButtonDisable} 
+        <TouchableOpacity
+          style={selectedSeats.length > 0 ? styles.paymentButton : styles.paymentButtonDisable}
           onPress={selectedSeats.length > 0 ? handleBooking : null}
           disabled={selectedSeats.length === 0}
         >
@@ -254,6 +182,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#1e1e1e",
     padding: 10,
+  },
+  noSeatsText: {
+    color: "#fff",
+    textAlign: "center",
+    fontSize: 16,
+    marginVertical: 20,
   },
   header: {
     fontSize: 20,
@@ -300,9 +234,32 @@ const styles = StyleSheet.create({
   },
   vipSeat: {
     backgroundColor: "#FFD700",
-  },  
+  },
   boughtSeat: {
     backgroundColor: "#555",
+  },
+  boughtSeatCross: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+  },
+  crossLine1: {
+    position: "absolute",
+    width: "100%",
+    height: 2,
+    backgroundColor: "#FFF",
+    transform: [{ rotate: "45deg" }],
+    top: "50%",
+    left: 0,
+  },
+  crossLine2: {
+    position: "absolute",
+    width: "100%",
+    height: 2,
+    backgroundColor: "#FFF",
+    transform: [{ rotate: "-45deg" }],
+    top: "50%",
+    left: 0,
   },
   seatText: {
     color: "#fff",
@@ -347,43 +304,6 @@ const styles = StyleSheet.create({
   legendText: {
     color: "#fff",
     marginRight: 10,
-  },
-  availableSeat: {
-    backgroundColor: "#1e1e1e",
-    borderColor: "#fff",
-    borderWidth: 1,
-  },
-  selectedSeat: {
-    backgroundColor: "#FF0000",
-  },
-  boughtSeat: {
-    backgroundColor: "#555",
-    borderWidth: 2,
-    borderColor: "transparent",
-    position: "relative",
-  },
-  boughtSeatCross: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-  },
-  crossLine1: {
-    position: "absolute",
-    width: "100%",
-    height: 2,
-    backgroundColor: "#FFF",
-    transform: [{ rotate: "45deg" }],
-    top: "50%",
-    left: 0,
-  },
-  crossLine2: {
-    position: "absolute",
-    width: "100%",
-    height: 2,
-    backgroundColor: "#FFF",
-    transform: [{ rotate: "-45deg" }],
-    top: "50%",
-    left: 0,
   },
   footer: {
     padding: 10,
