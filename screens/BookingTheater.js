@@ -1,205 +1,191 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, FlatList, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import { API_URL } from '@env';
 
-const sampleData = {
-  "2024-10-30": [
-    { theater: "Rạp 1", showtimes: ["10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM", "9:30 PM"] },
-    { theater: "Rạp 2", showtimes: ["11:00 AM", "2:30 PM", "6:00 PM", "8:30 PM", "10:30 PM"] },
-    { theater: "Rạp 3", showtimes: ["9:30 AM", "12:30 PM", "3:30 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 4", showtimes: ["10:30 AM", "1:00 PM", "5:00 PM", "7:30 PM", "10:00 PM"] },
-  ],
-  "2024-10-31": [
-    { theater: "Rạp 5", showtimes: ["8:30 AM", "11:00 AM", "2:30 PM", "5:00 PM", "8:00 PM"] },
-    { theater: "Rạp 6", showtimes: ["9:00 AM", "12:00 PM", "3:30 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 7", showtimes: ["10:00 AM", "1:00 PM", "4:00 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 8", showtimes: ["11:30 AM", "2:00 PM", "5:30 PM", "8:00 PM", "10:30 PM"] },
-  ],
-  "2024-11-11": [
-    { theater: "Rạp 1", showtimes: ["10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM", "9:30 PM"] },
-    { theater: "Rạp 2", showtimes: ["11:00 AM", "2:30 PM", "6:00 PM", "8:30 PM", "10:30 PM"] },
-    { theater: "Rạp 3", showtimes: ["9:30 AM", "12:30 PM", "3:30 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 4", showtimes: ["10:30 AM", "1:00 PM", "5:00 PM", "7:30 PM", "10:00 PM"] },
-  ],
-  "2024-11-12": [
-    { theater: "Rạp 5", showtimes: ["8:30 AM", "11:00 AM", "2:30 PM", "5:00 PM", "8:00 PM"] },
-    { theater: "Rạp 6", showtimes: ["9:00 AM", "12:00 PM", "3:30 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 7", showtimes: ["10:00 AM", "1:00 PM", "4:00 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 8", showtimes: ["11:30 AM", "2:00 PM", "5:30 PM", "8:00 PM", "10:30 PM"] },
-  ],
-  "2024-11-14": [
-    { theater: "Rạp 5", showtimes: ["8:30 AM", "11:00 AM", "2:30 PM", "5:00 PM", "8:00 PM"] },
-    { theater: "Rạp 6", showtimes: ["9:00 AM", "12:00 PM", "3:30 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 7", showtimes: ["10:00 AM", "1:00 PM", "4:00 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 8", showtimes: ["11:30 AM", "2:00 PM", "5:30 PM", "8:00 PM", "10:30 PM"] },
-  ],
-  "2024-11-16": [
-    { theater: "Rạp 5", showtimes: ["8:30 AM", "11:00 AM", "2:30 PM", "5:00 PM", "8:00 PM"] },
-    { theater: "Rạp 6", showtimes: ["9:00 AM", "12:00 PM", "3:30 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 7", showtimes: ["10:00 AM", "1:00 PM", "4:00 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 8", showtimes: ["11:30 AM", "2:00 PM", "5:30 PM", "8:00 PM", "10:30 PM"] },
-  ],
-  "2024-11-17": [
-    { theater: "Rạp 1", showtimes: ["10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM", "9:30 PM"] },
-    { theater: "Rạp 2", showtimes: ["11:00 AM", "2:30 PM", "6:00 PM", "8:30 PM", "10:30 PM"] },
-    { theater: "Rạp 3", showtimes: ["9:30 AM", "12:30 PM", "3:30 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 4", showtimes: ["10:30 AM", "1:00 PM", "5:00 PM", "7:30 PM", "10:00 PM"] },
-  ],
-  "2024-11-19": [
-    { theater: "Rạp 1", showtimes: ["10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM", "9:30 PM"] },
-    { theater: "Rạp 2", showtimes: ["11:00 AM", "2:30 PM", "6:00 PM", "8:30 PM", "10:30 PM"] },
-    { theater: "Rạp 3", showtimes: ["9:30 AM", "12:30 PM", "3:30 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 4", showtimes: ["10:30 AM", "1:00 PM", "5:00 PM", "7:30 PM", "10:00 PM"] },
-  ],
-  "2024-11-20": [
-    { theater: "Rạp 5", showtimes: ["8:30 AM", "11:00 AM", "2:30 PM", "5:00 PM", "8:00 PM"] },
-    { theater: "Rạp 6", showtimes: ["9:00 AM", "12:00 PM", "3:30 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 7", showtimes: ["10:00 AM", "1:00 PM", "4:00 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 8", showtimes: ["11:30 AM", "2:00 PM", "5:30 PM", "8:00 PM", "10:30 PM"] },
-  ],
-  "2024-11-21": [
-    { theater: "Rạp 1", showtimes: ["10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM", "9:30 PM"] },
-    { theater: "Rạp 2", showtimes: ["11:00 AM", "2:30 PM", "6:00 PM", "8:30 PM", "10:30 PM"] },
-    { theater: "Rạp 3", showtimes: ["9:30 AM", "12:30 PM", "3:30 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 4", showtimes: ["10:30 AM", "1:00 PM", "5:00 PM", "7:30 PM", "10:00 PM"] },
-  ],
-  "2024-11-23": [
-    { theater: "Rạp 1", showtimes: ["10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM", "9:30 PM"] },
-    { theater: "Rạp 2", showtimes: ["11:00 AM", "2:30 PM", "6:00 PM", "8:30 PM", "10:30 PM"] },
-    { theater: "Rạp 3", showtimes: ["9:30 AM", "12:30 PM", "3:30 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 4", showtimes: ["10:30 AM", "1:00 PM", "5:00 PM", "7:30 PM", "10:00 PM"] },
-  ],
-  "2024-11-24": [
-    { theater: "Rạp 5", showtimes: ["8:30 AM", "11:00 AM", "2:30 PM", "5:00 PM", "8:00 PM"] },
-    { theater: "Rạp 6", showtimes: ["9:00 AM", "12:00 PM", "3:30 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 7", showtimes: ["10:00 AM", "1:00 PM", "4:00 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 8", showtimes: ["11:30 AM", "2:00 PM", "5:30 PM", "8:00 PM", "10:30 PM"] },
-  ],
-  "2024-11-25": [
-    { theater: "Rạp 1", showtimes: ["10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM", "9:30 PM"] },
-    { theater: "Rạp 2", showtimes: ["11:00 AM", "2:30 PM", "6:00 PM", "8:30 PM", "10:30 PM"] },
-    { theater: "Rạp 3", showtimes: ["9:30 AM", "12:30 PM", "3:30 PM", "6:30 PM", "9:00 PM"] },
-    { theater: "Rạp 4", showtimes: ["10:30 AM", "1:00 PM", "5:00 PM", "7:30 PM", "10:00 PM"] },
-  ],
+// Hàm tạo các ngày trong tuần từ thứ Hai đến Chủ Nhật
+const generateWeekDays = (startDate) => {
+  const days = [];
+  const currentDate = new Date(startDate);
+  const day = currentDate.getDay();
+
+  // Tìm ngày thứ Hai của tuần hiện tại
+  const mondayOffset = day === 0 ? -6 : 1 - day; // Nếu Chủ Nhật (0), lùi 6 ngày
+  const mondayDate = new Date(currentDate);
+  mondayDate.setDate(currentDate.getDate() + mondayOffset);
+
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(mondayDate);
+    day.setDate(mondayDate.getDate() + i);
+    days.push(day);
+  }
+
+  return days;
 };
 
-
 const Booking = ({ route, navigation }) => {
-  const { movieTitle, moviePoster } = route.params;
+  const { movieId, movieTitle, moviePoster } = route.params;
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedShowtime, setSelectedShowtime] = useState(null);
-  const [selectedSeats, setSelectedSeats] = useState([]);
-  const [theaters, setTheaters] = useState([]);
-  const [selectedTheater, setSelectedTheater] = useState(null);
-  const [expandedTheater, setExpandedTheater] = useState(null);
-
-//   useEffect(() => {
-//     axios.get(${API_URL}/movies/${movieId})
-//       .then(response => {
-//         setShowtimes(response.data.showtimes);
-//       })
-//       .catch(error => {
-//         console.error(error);
-// alert(error);
-//       });
-//   }, []);
-
-//   const toggleSeatSelection = (seat) => {
-//     if (selectedSeats.includes(seat)) {
-//       setSelectedSeats(selectedSeats.filter(s => s !== seat));
-//     } else {
-//       setSelectedSeats([...selectedSeats, seat]);
-//     }
-//   };
-
-//   const handleBooking = () => {
-//     axios.post(${API_URL}/bookings, {
-//       movie_id: movieId,
-//       time_id: selectedShowtime,
-//       seats: selectedSeats
-//     })
-//     .then(() => {
-//       navigation.navigate('Payment');
-//     })
-//     .catch(error => {
-//       console.error(error);
-//     });
-//   };
-
-  // Hàm tạo các ngày trong tuần từ thứ Hai đến Chủ Nhật
-  const generateWeekDays = (startDate) => {
-    const days = [];
-    const firstDay = startDate.getDay();
-    const mondayOffset = (firstDay === 0 ? -6 : 1) - firstDay;
-    const mondayDate = new Date(startDate);
-    mondayDate.setDate(mondayDate.getDate() + mondayOffset);
-    
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(mondayDate);
-      day.setDate(day.getDate() + i);
-      days.push(day);
-    }
-    return days;
-  };
-
   const [currentWeek, setCurrentWeek] = useState(generateWeekDays(new Date()));
+  const [currentMonth, setCurrentMonth] = useState(selectedDate.getMonth() + 1);
+  const [currentYear, setCurrentYear] = useState(selectedDate.getFullYear());
+  const [theaters, setTheaters] = useState({});
+  const [expandedTheater, setExpandedTheater] = useState(null);
+  const [selectedShowtime, setSelectedShowtime] = useState(null);
 
-  // Hàm để chuyển sang tuần tiếp theo
+  // Chuyển sang tuần tiếp theo
   const goToNextWeek = () => {
-    const newDate = new Date(currentWeek[0]);
-    newDate.setDate(newDate.getDate() + 7);
-    setCurrentWeek(generateWeekDays(newDate));
+    const newDate = new Date(currentWeek[0]); // Lấy ngày thứ Hai hiện tại
+    newDate.setDate(newDate.getDate() + 7); // Thêm 7 ngày
+    setCurrentWeek(generateWeekDays(newDate)); // Tạo tuần mới từ ngày mới
+    setSelectedDate(newDate); // Cập nhật ngày được chọn là thứ Hai tuần mới
   };
 
-  // Hàm để quay lại tuần trước
+  // Quay lại tuần trước
   const goToPreviousWeek = () => {
-    const newDate = new Date(currentWeek[0]);
-    newDate.setDate(newDate.getDate() - 7);
-    setCurrentWeek(generateWeekDays(newDate));
+    const newDate = new Date(currentWeek[0]); // Lấy ngày thứ Hai hiện tại
+    newDate.setDate(newDate.getDate() - 7); // Trừ 7 ngày
+    setCurrentWeek(generateWeekDays(newDate)); // Tạo tuần mới từ ngày mới
+    setSelectedDate(newDate); // Cập nhật ngày được chọn là thứ Hai tuần trước
   };
 
-  // Hàm chọn ngày
+  // Định dạng dữ liệu phim
+  const formatMovieData = (data) => {
+    if (!data.showtimes || typeof data.showtimes !== 'object') {
+      console.error('Invalid showtimes data:', data.showtimes);
+      return { showtimes: [] };
+    }
+
+    const formattedShowtimes = Object.entries(data.showtimes).map(([id, showtime]) => {
+      const startTime = new Date(showtime.start_time);
+
+      const localDate = new Date(startTime.getTime() - startTime.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  
+      // Kiểm tra xem startTime có hợp lệ không
+      if (isNaN(startTime)) {
+        console.error(`Invalid start_time value for showtime ${id}:`, showtime.start_time);
+        return null; // Hoặc có thể tiếp tục với giá trị mặc định nếu cần
+      }
+  
+      return {
+        id,
+        date: localDate,
+        cinemaName: showtime.cinema.cinema_name,
+        hallName: showtime.cinema.hall_name,
+        startTimeOriginal: showtime.start_time,
+        startTime: startTime.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        }),
+      };
+    }).filter(showtime => showtime !== null); // Lọc bỏ các showtime bị lỗi  
+
+    return {
+      showtimes: formattedShowtimes,
+    };
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(`http://192.168.0.103:8000/movies/${movieId}`);
+        const formattedData = formatMovieData(response.data);
+
+        // Nhóm dữ liệu theo rạp và ngày
+        const groupedTheaters = formattedData.showtimes.reduce((acc, showtime) => {
+          const date = showtime.date;
+          const cinemaName = showtime.cinemaName;
+
+          if (!acc[date]) {
+            acc[date] = {};
+          }
+          if (!acc[date][cinemaName]) {
+            acc[date][cinemaName] = [];
+          }
+          // Lưu cả startTime và hallName
+          acc[date][cinemaName].push({
+            id: showtime.id,
+            startTimeOriginal: showtime.startTimeOriginal,
+            startTime: showtime.startTime,
+            hallName: showtime.hallName,
+          });
+
+          return acc;
+        }, {});
+
+        setTheaters(groupedTheaters);
+      } catch (error) {
+        console.error('Error fetching movie data:', error);
+      }
+    };
+
+    fetchData();
+  }, [movieId]);
+
+  // Chọn ngày
   const handleDateSelect = (date) => {
     setSelectedDate(date);
-    const selectedDateString = date.toISOString().split('T')[0];
-    setTheaters(sampleData[selectedDateString] || []);
+    setCurrentMonth(date.getMonth() + 1); // Lấy số tháng và thêm 1
+    setCurrentYear(date.getFullYear());
+    setExpandedTheater(null);
     setSelectedShowtime(null);
-    setSelectedSeats([]);
   };
 
-  // Hàm chọn rạp
-  const handleTheaterSelect = (theater) => {
-    setSelectedTheater(theater);
-    setExpandedTheater(expandedTheater === theater ? null : theater);
+  // Chọn rạp
+  const handleTheaterSelect = (cinemaName) => {
+    setExpandedTheater(expandedTheater === cinemaName ? null : cinemaName);
     setSelectedShowtime(null);
-    setSelectedSeats([]);
   };
 
+  // Chọn suất chiếu
   const handleShowtimeSelect = (showtime) => {
     setSelectedShowtime(showtime);
-    navigation.navigate('BookingSeats', { selectedShowtime: showtime, selectedTheater, movieTitle, moviePoster });
+    navigation.navigate('BookingSeats', {
+      selectedDate: selectedDate.toISOString(),
+      originShowtime: showtime.startTimeOriginal,
+      selectedTheater: expandedTheater,
+      selectedShowtime: showtime.startTime,
+      selectedHall: showtime.hallName,
+      movieTitle,
+      moviePoster,
+      movieId,
+      showtimeId: showtime.id,
+    });
   };
 
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollContainer}>
-        <Text style={styles.header}>Chọn ngày chiếu</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.header}>Chọn ngày chiếu</Text>
+          <Text style={styles.monthText}>Tháng {currentMonth}, {currentYear}</Text>
+        </View>
         <View style={styles.dateSelector}>
           <TouchableOpacity onPress={goToPreviousWeek}>
             <MaterialIcons name="keyboard-arrow-left" size={24} color="#FFD700" />
           </TouchableOpacity>
           {currentWeek.map((date, index) => (
-            <TouchableOpacity 
-              key={index} 
+            <TouchableOpacity
+              key={index}
               onPress={() => handleDateSelect(date)}
               style={styles.dateItem}
             >
-              <Text style={[styles.dayText, date.toDateString() === selectedDate.toDateString() && styles.selectedDay]}>
+              <Text
+                style={[
+                  styles.dayText,
+                  date.toDateString() === selectedDate.toDateString() && styles.selectedDay,
+                ]}
+              >
                 {date.toLocaleDateString('en-GB', { weekday: 'short' })}
               </Text>
-              <Text style={[styles.dateText, date.toDateString() === selectedDate.toDateString() && styles.selectedDate]}>
+              <Text
+                style={[
+                  styles.dateText,
+                  date.toDateString() === selectedDate.toDateString() && styles.selectedDate,
+                ]}
+              >
                 {date.getDate()}
               </Text>
             </TouchableOpacity>
@@ -210,47 +196,58 @@ const Booking = ({ route, navigation }) => {
         </View>
 
         <Text style={styles.header}>Chọn rạp và khung giờ chiếu</Text>
-        {theaters.length > 0 ? theaters.map((theater, index) => (
-          <View key={index}>
-            <TouchableOpacity 
-              onPress={() => handleTheaterSelect(theater)}
-              style={styles.theaterContainer}
-            >
-              <View style={styles.theaterRow}>
-                <Text style={styles.theaterName}>{theater.theater}</Text>
-                <MaterialIcons
-                  name={expandedTheater === theater ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-                  size={24}
-                  color="#FFD700"
-                />
-              </View>
-            </TouchableOpacity>
+        {theaters[selectedDate.toISOString().split('T')[0]] ? (
+          Object.entries(theaters[selectedDate.toISOString().split('T')[0]]).map(
+            ([cinemaName, showtimes], index) => (
+              <View key={index}>
+                <TouchableOpacity
+                  onPress={() => handleTheaterSelect(cinemaName)}
+                  style={styles.theaterContainer}
+                >
+                  <View style={styles.theaterRow}>
+                    <Text style={styles.theaterName}>{cinemaName}</Text>
+                    <MaterialIcons
+                      name={
+                        expandedTheater === cinemaName
+                          ? 'keyboard-arrow-up'
+                          : 'keyboard-arrow-down'
+                      }
+                      size={24}
+                      color="#FFD700"
+                    />
+                  </View>
+                </TouchableOpacity>
 
-            {expandedTheater === theater && (
-              <FlatList
-                data={theater.showtimes}
-                horizontal
-                style={styles.showtimeRow}
-                renderItem={({ item }) => (
-                  <TouchableOpacity 
-                    style={[styles.showtimeButton, selectedShowtime === item && styles.selectedShowtimeButton]}
-                    onPress={() => {
-                      setSelectedShowtime(item);
-                      handleShowtimeSelect(item);
-                    }}
-                  >
-                    <Text 
-                      style={[styles.showtimeText, selectedShowtime === item]}
-                    >
-                      {item}
-                    </Text>
-                  </TouchableOpacity>
+                {expandedTheater === cinemaName && (
+                  <FlatList
+                    data={showtimes}
+                    horizontal
+                    style={styles.showtimeRow}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={[
+                          styles.showtimeButton,
+                          selectedShowtime === item && styles.selectedShowtimeButton,
+                        ]}
+                        onPress={() => handleShowtimeSelect(item)}
+                      >
+                        <Text
+                          style={[
+                            styles.showtimeText,
+                            selectedShowtime === item && styles.selectedShowtimeText,
+                          ]}
+                        >
+                          {item.startTime}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    keyExtractor={(item, index) => index.toString()}
+                  />
                 )}
-                keyExtractor={(item, index) => index.toString()}
-              />
-            )}
-          </View>
-        )) : (
+              </View>
+            )
+          )
+        ) : (
           <Text style={styles.noShowtimesText}>Không có rạp chiếu cho ngày này</Text>
         )}
       </ScrollView>
@@ -269,12 +266,21 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 10,
+  },  
   header: {
     fontSize: 20,
     color: '#fff',
-    marginVertical: 10,
     fontWeight: 'bold',
   },
+  monthText: {
+    fontSize: 16,
+    color: '#fff',
+  },  
   dateSelector: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -298,7 +304,6 @@ const styles = StyleSheet.create({
   },
   selectedDate: {
     borderRadius: 15,
-    borderWidth: 2,
     backgroundColor: '#FF0000',
     padding: 5,
   },
@@ -330,12 +335,17 @@ const styles = StyleSheet.create({
   },
   selectedShowtimeButton: {
     backgroundColor: '#FF0000',
-
   },
   showtimeText: {
     color: '#fff',
   },
+  selectedShowtimeText: {
+    fontWeight: 'bold',
+  },
   noShowtimesText: {
-    color: '#fff',
+    color: '#aaa',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

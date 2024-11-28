@@ -6,16 +6,26 @@ import axios from 'axios';
 const { width } = Dimensions.get("window");
 
 const Payment = ({ route, navigation }) => {
-  const { selectedShowtime, selectedTheater, movieTitle, moviePoster, selectedSeats, totalPrice } = route.params;
+  const { originShowtime, selectedDate, selectedShowtime, selectedTheater, selectedHall, movieId, movieTitle, moviePoster, selectedSeats, totalPrice } = route.params;
   const [orderId, setOrderId] = useState(null);
   const [checkoutUrl, setCheckoutUrl] = useState(null);
   const description = "Mua vé xem phim";
+  
+  // Format selectedDate to dd/mm/yyyy
+  const formatDate = (date) => {
+    const day = date.getDate().toString().padStart(2, '0'); // Add leading zero if day is < 10
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Get month and add leading zero if < 10
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`; // Return formatted date
+  };
 
-  // Nếu selectedTheater là một object, lấy giá trị cụ thể (ví dụ: theater name)
-  const theaterName = typeof selectedTheater === 'object' ? selectedTheater.theater : selectedTheater;
-
-  // Nếu selectedShowtime là một object, lấy giá trị cụ thể (ví dụ: thời gian chiếu)
-  const showtimeValue = typeof selectedShowtime === 'object' ? selectedShowtime.time : selectedShowtime;
+  // Format price as VND
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(price);
+  };
 
   // Hàm tạo số ngẫu nhiên
   const generateRandomOrderId = () => {
@@ -24,7 +34,7 @@ const Payment = ({ route, navigation }) => {
       .toISOString()
       .replace(/[-T:.Z]/g, '')
       .slice(0, 14); // yyyyMMddHHmmss
-    const randomNumber = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const randomNumber = Math.floor(Math.random() * 100).toString().padStart(2, '0');
     return parseInt(`${formattedTime}${randomNumber}`, 10); // Trả về giá trị
   };
 
@@ -33,7 +43,6 @@ const Payment = ({ route, navigation }) => {
     const newOrderId = generateRandomOrderId();
     if (newOrderId) {
       setOrderId(newOrderId.toString()); // Chỉ gọi nếu giá trị hợp lệ
-      console.log(newOrderId)
     } else {
       console.error('Failed to generate Order ID');
     }
@@ -47,15 +56,15 @@ const Payment = ({ route, navigation }) => {
 
     const paymentData = {
       order_id: orderId,
-      amount: parseInt(totalPrice, 10), // Chuyển amount sang kiểu số
+      // amount: parseInt(totalPrice, 10), // Chuyển amount sang kiểu số
+      amount: 2000,
       description: description,
     };
 
     try {
       const response = await axios.post('http://192.168.0.103:8000/payment', paymentData);
       if (response.data.checkoutUrl) {
-        // Alert.alert('Payment Link', `Checkout URL: ${response.data.checkoutUrl}`);
-        setCheckoutUrl(response.data.checkoutUrl);
+        setCheckoutUrl(response.data.checkoutUrl)
       } else {
         Alert.alert('Error', 'Payment link not generated');
       }
@@ -70,10 +79,29 @@ const Payment = ({ route, navigation }) => {
       <WebView
         source={{ uri: checkoutUrl }}
         style={{ flex: 1 }}
-        onNavigationStateChange={(navState) => {
+        onNavigationStateChange={async (navState) => {
           if (navState.url.includes('/success')) {
-            Alert.alert('Success', 'Thanh toán thành công');
-            setCheckoutUrl(null); // Quay lại màn hình chính
+            // Gọi API POST /bookings để lưu thông tin đặt vé
+            const bookingData = {
+              user_id: "LopsaIAr5mpxeEuSrw2x", // Lấy từ auth
+              movie_id: movieId, // Phải truyền từ phía trước
+              movie_title: movieTitle, // Tiêu đề phim, truyền từ phía trước
+              cinema_name: selectedTheater, // Tên rạp, truyền từ phía trước
+              showtime: originShowtime,
+              seats: selectedSeats, // Mảng ghế đã chọn
+              total_price: totalPrice, // Tổng giá vé, cần tính toán từ phía trước
+            };
+  
+            try {
+              await axios.post('http://192.168.0.103:8000/bookings/', bookingData);
+              Alert.alert('Success', 'Thanh toán thành công và đặt vé hoàn tất');
+              setCheckoutUrl(null);
+              // navigation.navigate('Home'); // Điều hướng về trang chính sau khi thành công
+              navigation.navigate('MovieDetail');
+            } catch (error) {
+              Alert.alert('Error', error.response?.data?.detail || 'Đặt vé thất bại');
+              setCheckoutUrl(null);
+            }
           } else if (navState.url.includes('/cancel')) {
             Alert.alert('Cancelled', 'Thanh toán bị hủy');
             setCheckoutUrl(null); // Quay lại màn hình chính
@@ -85,7 +113,7 @@ const Payment = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView>
         <View style={styles.section}>
           <Image source={{ uri: moviePoster }} style={styles.poster} />
         </View>
@@ -94,12 +122,22 @@ const Payment = ({ route, navigation }) => {
         </View>
         <View style={styles.section}>
           <Text style={styles.title}>
-            Rạp: <Text style={styles.value}>{theaterName}</Text>
+            Rạp chiếu phim: <Text style={styles.value}>{selectedTheater}</Text>
           </Text>
         </View>
         <View style={styles.section}>
           <Text style={styles.title}>
-            Suất chiếu: <Text style={styles.value}>{showtimeValue}</Text>
+            Phòng chiếu: <Text style={styles.value}>{selectedHall}</Text>
+          </Text>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.title}>
+            Ngày: <Text style={styles.value}>{formatDate(new Date(selectedDate))}</Text>
+          </Text>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.title}>
+            Suất chiếu: <Text style={styles.value}>{selectedShowtime}</Text>
           </Text>
         </View>
         <View style={styles.section}>
@@ -114,7 +152,7 @@ const Payment = ({ route, navigation }) => {
         </View>
         <View style={styles.section}>
           <Text style={styles.title}>
-            Tổng tiền: <Text style={styles.value}>{totalPrice} VND</Text>
+            Tổng tiền: <Text style={styles.value}>{formatPrice(totalPrice)}</Text>
           </Text>
         </View>
       </ScrollView>
@@ -130,9 +168,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1e1e1e',
-  },
-  content: {
-    padding: 20,
+    padding: 10,
   },
   section: {
     marginBottom: 15,
@@ -163,10 +199,10 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#ff0000',
-    paddingVertical: 15,
+    borderRadius: 10,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'absolute',
     bottom: 0,
     width: '100%',
   },

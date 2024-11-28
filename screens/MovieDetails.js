@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Image, ScrollView, Button, StyleSheet, Dimensions,TouchableOpacity } from "react-native";
+import { View, Text, Image, ScrollView, StyleSheet, Dimensions,TouchableOpacity } from "react-native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import axios from "axios";
 import YoutubeIframe from "react-native-youtube-iframe";
@@ -9,38 +9,24 @@ const { width } = Dimensions.get("window");
 
 const MovieDetails = ({ route, navigation }) => {
   // const { movieId } = route.params;
-  // const [movie, setMovie] = useState(null);
+  const movieId = '9VWbUXgGI4I842JG78bc';
+  const [movie, setMovie] = useState(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
-  // useEffect(() => {
-  //   axios
-  //   .get(http://192.168.0.107:8000/movies/${movieId})
-  //   .then((response) => setMovie(response.data))
-  //   .catch((error) => console.error(error))
-  // }, []);
+  // Fetch Movie Details từ Backend
+  useEffect(() => {
+    const fetchMovieDetails = async () => {
+      try {
+        const response = await axios.get(`http://192.168.0.103:8000/movies/${movieId}`);
+        setMovie(response.data);
+      } catch (error) {
+        console.error("Error fetching movie details:", error);
+      }
+    };
+    fetchMovieDetails();
+  }, [movieId]);
 
-  // if (!movie) {
-  //   return <Text>Loading...</Text>;
-  // }
-
-  const movies = [
-    {
-      posterUrl: "https://i.ebayimg.com/images/g/B8oAAOSw2fdg5A-h/s-l1200.jpg",
-      title: "INCEPTION",
-      genres: ["Action", "Sci-Fi", "Thriller"],
-      duration: 148,
-      releaseDate: "2010-07-16",
-      imdbRating: 8.8,
-      rottenTomatoesRating: 87,
-      description:
-      "A skilled thief, the absolute best in the dangerous art of extraction, steals valuable secrets from deep within the subconscious during the dream state.",
-      trailerUrl: "LifqWf0BAOA",
-    },
-  ];
-  
-  const movie = movies[0];
-
-  const fetchYoutubeMeta = async (videoId) => {
+  const fetchYoutubeMeta = async () => {
     const apiKey = VID_API;
     const url = `https://www.googleapis.com/youtube/v3/videos?id=${movie.trailerUrl}&key=${apiKey}&part=snippet,contentDetails,statistics`;
   
@@ -56,21 +42,28 @@ const MovieDetails = ({ route, navigation }) => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      const metadata = await fetchYoutubeMeta(movie.trailerUrl);
-      if (metadata) {
-        setVideoTitle(metadata.title);
-        setVideoDescription(metadata.description);
-      }
-    };
+    if (movie?.trailerUrl) {
+      const fetchData = async () => {
+        const metadata = await fetchYoutubeMeta(movie.trailerUrl);
+      };
+      fetchData();
+    }
+  }, [movie?.trailerUrl]);
+  
+  if (!movie) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ color: "#fff", textAlign: "center", marginTop: 20 }}>
+          Loading...
+        </Text>
+      </View>
+    );
+  }  
 
-    fetchData();
-  }, [movie.trailerUrl]);
+  const formattedReleaseDate = new Date(movie.releaseDate).toLocaleDateString("en-GB")
+  const formattedDuration = `${Math.floor(movie.duration / 60)} giờ ${movie.duration % 60} phút`
 
-  const formattedDuration = `${Math.floor(movie.duration / 60)} giờ ${movie.duration % 60} phút`;
-  const formattedReleaseDate = new Date(movie.releaseDate).toLocaleDateString("en-GB");
-
-  const displayDescription = showFullDescription ? movie.description : movie.description.split(" ").slice(0, 25).join(" ") + "...";
+  const displayDescription = showFullDescription ? movie.description : (movie.description.split(" ").slice(0, 25).join(" ") + "...")
   const isRotten = movie.rottenTomatoesRating < 60;
   const rottenTomatoesIcon = isRotten ? 
   "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Rotten_Tomatoes_rotten.svg/1200px-Rotten_Tomatoes_rotten.svg.png" :
@@ -78,11 +71,10 @@ const MovieDetails = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollContainer}>
+      <ScrollView>
         <YoutubeIframe
           height={width * 0.55}
           videoId={movie.trailerUrl}
-          // videoId={movieId}
           onError={(e) => console.log(e)}
           onReady={() => console.log("Video is ready")}
         />
@@ -138,13 +130,9 @@ const MovieDetails = ({ route, navigation }) => {
         </Text>
       </ScrollView>
 
-      <View style={styles.buttonContainer}>
-        <Button
-          title="Đặt Vé Ngay"
-          onPress={() => navigation.navigate("BookingTheater", { movieTitle: movie.title, moviePoster: movie.posterUrl })}
-          color="#FF0000"
-        />
-      </View>
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("BookingTheater", { movieTitle: movie.title, moviePoster: movie.posterUrl, movieId })}>
+        <Text style={styles.buttonText}>Đặt Vé Ngay</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -153,9 +141,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1e1e1e",
-  },
-  scrollContainer: {
-    flex: 1,
     padding: 10,
   },
   contentContainer: {
@@ -239,16 +224,23 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginVertical: 10,
     fontSize: 16,
-    marginBottom: 70,
   },
   readMoreText: {
     color: "#FFD700",
   },
-  buttonContainer: {
-    position: "absolute",
+  button: {
+    backgroundColor: '#ff0000',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
     bottom: 0,
-    width: "100%",
-    padding: 10,
+    width: '100%',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 
