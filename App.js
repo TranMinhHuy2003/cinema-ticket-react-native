@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // import MovieListScreen from './screens/MovieListScreen';
 import BookingTheater from './screens/BookingTheater';
-import MovieDetail from './screens/MovieDetail';
+import MovieDetail from './screens/MovieDetails';
 import BookingSeats from './screens/BookingSeats';
 import Payment from './screens/Payment';
 import SalesPromotionList from './screens/SalesPromotionList';
