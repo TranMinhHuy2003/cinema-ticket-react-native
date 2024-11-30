@@ -12,6 +12,10 @@ import EditMovie from './EditMovie';
 import AddMovie from './AddMovie';
 import TicketsManagement from './TicketsManagement';
 import TicketDetail from './TicketDetail';
+import MoviesShowtime from './MoviesShowtime'
+import ShowtimeManagement from './ShowtimeManagement'
+import AddShowtimeScreen from './AddShowtimeScreen';
+import EditShowtimeScreen from './EditShowtimeScreen';
 // import TicketsManagement from './TicketsManagement';
 // import SeatsManagement from './SeatsManagement';
 
@@ -30,6 +34,12 @@ function getHiddenDrawer(route) {
     case 'AddMovie':
       return false;
     case 'TicketDetail':
+      return false;
+    case 'ShowtimeManagement':
+      return false;
+    case 'AddShowtimeScreen':
+      return false;
+    case 'EditShowtimeScreen':
       return false;
   }
 }
@@ -133,6 +143,89 @@ function AdminTicket() {
   );
 }
 
+function AdminShowtime() {
+  return (
+    <Stack.Navigator initialRouteName="MoviesShowtime">
+      <Stack.Screen 
+        name="MoviesShowtime" 
+        component={MoviesShowtime} 
+        options={{ 
+          title: 'Quản lý suất chiếu', 
+          headerShown: false
+        }} 
+      />
+      <Stack.Screen 
+        name="ShowtimeManagement" 
+        component={ShowtimeManagement} 
+        options={({ navigation }) => ({
+          headerLeft: () => (
+            <Icon
+              name="arrow-back-outline"
+              size={30}
+              onPress={() => navigation.goBack()}
+              style={{ marginLeft: 15, color: '#ff0000' }}
+            />
+          ),
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#1e1e1e',
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold'
+          }
+        })}
+      />
+      <Stack.Screen 
+        name="AddShowtimeScreen" 
+        component={AddShowtimeScreen} 
+        options={({ navigation }) => ({
+          title: 'Thêm suất chiếu',
+          headerLeft: () => (
+            <Icon
+              name="arrow-back-outline"
+              size={30}
+              onPress={() => navigation.goBack()}
+              style={{ marginLeft: 15, color: '#ff0000' }}
+            />
+          ),
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#1e1e1e',
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold'
+          }
+        })}
+      />
+      <Stack.Screen 
+        name="EditShowtimeScreen" 
+        component={EditShowtimeScreen} 
+        options={({ navigation }) => ({
+          title: 'Sửa suất chiếu',
+          headerLeft: () => (
+            <Icon
+              name="arrow-back-outline"
+              size={30}
+              onPress={() => navigation.goBack()}
+              style={{ marginLeft: 15, color: '#ff0000' }}
+            />
+          ),
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#1e1e1e',
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold'
+          }
+        })}
+      />
+    </Stack.Navigator>
+  );
+}
+
 export default function Admin() {
   return (
     <NavigationContainer>
@@ -158,6 +251,7 @@ export default function Admin() {
         <Drawer.Screen name="Bảng điều khiển" component={Dashboard} />
         <Drawer.Screen name="Quản lý phim" component={AdminMovie} />
         <Drawer.Screen name="Quản lý vé" component={AdminTicket} />
+        <Drawer.Screen name="Quản lý suất chiếu" component={AdminShowtime} />
         {/* <Drawer.Screen name="Seats Management" component={SeatsManagement} /> */}
       </Drawer.Navigator>
     </NavigationContainer>

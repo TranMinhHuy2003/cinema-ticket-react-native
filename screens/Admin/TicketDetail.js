@@ -1,35 +1,71 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Button, Alert, Image } from 'react-native';
-import { users, movies } from './data'
 import { format } from 'date-fns';
+import axios from 'axios';
 
-const getUserName = (userId) => {
-  const user = users.find((user) => user.id === userId);
-  return user ? user.name : "Unknown User";
-};
+export default function TicketDetailsScreen ({ route, navigation }) {
+  const [users, setUsers] = useState([]);
+  const [movies, setMovies] = useState([]);
 
-const getPosterURL = (movieName) => {
-  const movie = movies.find((movie) => movie.title === movieName);
-  return movie ? movie.posterUrl : "URL not found";
-};
+  const handleStatus = (status) => {
+    if (status === 0) {
+      return "Đã hủy";
+    }
+    return "Đã xác nhận";
+  };
 
-const handleStatus = (status) => {
-  if (status === 0) {
-    return "Đã hủy";
-  }
-  return "Đã xác nhận";
-};
+  const fetchMovies = async () => {
+    try {
+      const response = await axios.get('http://192.168.1.5:8000/movies');
+      setMovies(response.data);
+    } catch (error) {
+      console.error('Failed to fetch movies:', error);
+    }
+  };
+  
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get('http://192.168.1.5:8000/users');
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    }
+  };
+  
+  useEffect(() => {
+    fetchMovies();
+    fetchUsers();
+  }, []);
+  const { ticket, ticket_id } = route.params;
 
-const TicketDetailsScreen = ({ route, navigation }) => {
-  const { ticket } = route.params;
+  const getUserName = (userId) => {
+    const user = users.find((user) => user.id === userId);
+    return user ? user.name : "Unknown User";
+  };
+
+  const getPosterURL = (movieName) => {
+    const movie = movies.find((movie) => movie.title === movieName);
+    return movie ? movie.posterUrl : "URL not found";
+  };
 
   const handleDelete = () => {
-    if (ticket.status === "Paid") {
-      Alert.alert("Không thể xóa", "Bạn không thể xóa vé đã thanh toán.");
-    } else {
-      Alert.alert("Xóa thành công", "Vé đã được xóa thành công.");
-      navigation.goBack();
-    }
+    Alert.alert("Xác nhận", "Bạn có chắc chắn muốn xóa vé này?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        onPress: () => {
+          axios.delete(`http://192.168.1.5:8000/tickets/${ticket_id}`, {
+          })
+          .then(() => {
+            alert('Xóa vé thành công!');
+          })
+          .catch(error => {
+            console.error(error);
+          });
+          navigation.goBack();
+        }
+      },
+    ]);
   };
 
   const formattedShowtime = format(new Date(ticket.showtime), "dd-MM-yyyy 'lúc' HH:mm");
@@ -90,5 +126,3 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
 });
-
-export default TicketDetailsScreen;

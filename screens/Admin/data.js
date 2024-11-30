@@ -335,3 +335,62 @@ export const tickets = [
 ];
 
 export const users = [];
+
+export const cinemas = [
+  {
+    name: "Cinema Center",
+    location: "123 Main Street, New York",
+    halls: [
+      {
+        name: "Hall 1",
+        seat_capacity: 100
+      },
+      {
+        name: "Hall 2",
+        seat_capacity: 120
+      }
+    ]
+  },
+  {
+    name: "Grand Cinema",
+    location: "123 Main Street, New York",
+    halls: [
+      {
+        name: "Hall 1",
+        seat_capacity: 100
+      },
+      {
+        name: "Hall 2",
+        seat_capacity: 120
+      }
+    ]
+  },
+  {
+    name: "Cinema World",
+    location: "123 Main Street, New York",
+    halls: [
+      {
+        name: "Hall 1",
+        seat_capacity: 100
+      },
+      {
+        name: "Hall 2",
+        seat_capacity: 120
+      }
+    ]
+  },
+  {
+    name: "Movie Palace",
+    location: "123 Main Street, New York",
+    halls: [
+      {
+        name: "Hall 1",
+        seat_capacity: 100
+      },
+      {
+        name: "Hall 2",
+        seat_capacity: 120
+      }
+    ]
+  }
+];
