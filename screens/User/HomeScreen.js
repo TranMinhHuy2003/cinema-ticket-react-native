@@ -1,9 +1,49 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
-import { movies } from '../Admin/data'; // Import movies từ file data.js
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { NavigationContainer } from '@react-navigation/native';
+import axios from 'axios';
+import { API_URL } from '@env';
+import MovieDetails from '../MovieDetails';
+import BookingTheater from '../BookingTheater';
+import BookingSeats from '../BookingSeats';
+import Payment from '../Payment';
+import SalesPromotionList from '../SalesPromotionList';
+import SalesPromotionDetail from '../SalesPromotionDetail';
 
-export default function HomeScreen() {
-  // Render từng mục phim
+const Stack = createStackNavigator(); // Tạo Stack Navigator
+
+// Danh sách phim
+function MovieList({ navigation }) {
+  const [movies, setMovies] = useState([]); // Trạng thái lưu danh sách phim
+  const [loading, setLoading] = useState(true); // Trạng thái tải dữ liệu
+
+  // Gọi API để lấy danh sách phim
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/movies`);
+        setMovies(response.data); // Lưu danh sách phim vào state
+      } catch (error) {
+        console.error(error);
+        Alert.alert('Lỗi', 'Không thể tải danh sách phim!');
+      } finally {
+        setLoading(false); // Tắt trạng thái tải
+      }
+    };
+
+    fetchMovies();
+  }, []);
+
   const renderMovieItem = ({ item }) => (
     <View style={styles.movieItem}>
       <Image source={{ uri: item.posterUrl }} style={styles.poster} />
@@ -17,14 +57,30 @@ export default function HomeScreen() {
           📅 {new Date(item.releaseDate).toLocaleDateString()}
         </Text>
         <TouchableOpacity
-          style={styles.trailerButton}
-          onPress={() => console.log(`Watch trailer: ${item.trailerUrl}`)} // Hành động mở trailer
+          style={styles.detailsButton}
+          onPress={() => navigation.navigate('MovieDetails', { movieId: item.id })} // Chuyển hướng đến MovieDetails
         >
-          <Text style={styles.trailerButtonText}>Xem Trailer</Text>
+          <Text style={styles.detailsButtonText}>Xem chi tiết</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#ff0000" />
+      </View>
+    );
+  }
+
+  if (movies.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.noMoviesText}>Không có phim nào để hiển thị!</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -32,10 +88,27 @@ export default function HomeScreen() {
       <FlatList
         data={movies}
         renderItem={renderMovieItem}
-        keyExtractor={(item, index) => index.toString()}
+        keyExtractor={(item) => item.id} // Sử dụng movieId làm khóa
         contentContainerStyle={styles.list}
       />
     </View>
+  );
+}
+
+// Stack Navigator trong HomeScreen
+export default function HomeScreen() {
+  return (
+    <NavigationContainer independent={true}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="MovieList" component={MovieList} />
+        <Stack.Screen name="MovieDetails" component={MovieDetails} />
+        <Stack.Screen name="BookingTheater" component={BookingTheater} />
+        <Stack.Screen name="BookingSeats" component={BookingSeats} />
+        <Stack.Screen name="Payment" component={Payment} />
+        <Stack.Screen name="SalesPromotionList" component={SalesPromotionList} />
+        <Stack.Screen name="SalesPromotionDetail" component={SalesPromotionDetail} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
@@ -89,15 +162,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 10,
   },
-  trailerButton: {
+  detailsButton: {
     backgroundColor: '#ff0000',
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
     alignSelf: 'flex-start',
   },
-  trailerButtonText: {
+  detailsButtonText: {
     color: '#fff',
     fontSize: 14,
+  },
+  noMoviesText: {
+    color: '#fff',
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

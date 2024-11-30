@@ -9,26 +9,43 @@ import {
 } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import { Input, Icon } from 'react-native-elements';
-import { users } from '../Admin/data';
+import axios from 'axios';
+import { API_URL } from '@env';
 
 export default function LoginScreen({ navigation }) {
-    const { setIsAuthenticated, setUserRole } = useContext(AuthContext); // Lấy setUserRole từ context
+    const { setIsAuthenticated, setUserRole, setUserId } = useContext(AuthContext); // Lấy setUserId từ AuthContext
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-    const handleLogin = () => {
-        // Kiểm tra thông tin đăng nhập
-        const user = users.find(
-            (u) => u.email === email && u.password === password
-        );
+    const handleLogin = async () => {
+        try {
+            const response = await axios.post(`${API_URL}/users/login`, {
+                email,
+                password,
+            });
 
-        if (user) {
+            const { user_id, name, is_admin } = response.data;
+
             setIsAuthenticated(true); // Đánh dấu người dùng đã đăng nhập
-            setUserRole(user.role); // Cập nhật vai trò (role)
-            Alert.alert('Đăng nhập thành công!', `Chào mừng ${user.name}`);
-        } else {
-            Alert.alert('Đăng nhập thất bại!', 'Sai email hoặc mật khẩu!');
+            setUserRole(is_admin ? 'admin' : 'user'); // Cập nhật vai trò (admin hoặc user)
+            setUserId(user_id); // Ghi nhận user_id vào AuthContext
+
+            Alert.alert('Đăng nhập thành công!', `Chào mừng ${name}`);
+            navigation.navigate(is_admin ? 'Admin' : 'Customer'); // Điều hướng đến màn hình phù hợp
+        } catch (error) {
+            if (error.response) {
+                if (error.response.status === 404) {
+                    Alert.alert('Đăng nhập thất bại!', 'Email không tồn tại!');
+                } else if (error.response.status === 401) {
+                    Alert.alert('Đăng nhập thất bại!', 'Sai mật khẩu!');
+                } else {
+                    Alert.alert('Đăng nhập thất bại!', error.response.data.detail || 'Lỗi không xác định!');
+                }
+            } else {
+                console.error(error);
+                Alert.alert('Lỗi', 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+            }
         }
     };
 

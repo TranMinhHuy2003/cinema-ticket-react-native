@@ -1,46 +1,95 @@
-import React, { useContext } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useContext, useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
-import { users } from '../Admin/data'; // Import dữ liệu user
+import axios from 'axios';
+import { API_URL } from '@env';
 
-const YourTicket = ({ navigation }) => {
-  const { userRole } = useContext(AuthContext);
+const YourTicket = () => {
+  const { userId } = useContext(AuthContext); // Lấy userId từ AuthContext
+  const [tickets, setTickets] = useState([]); // Dữ liệu vé
+  const [loading, setLoading] = useState(true); // Trạng thái tải dữ liệu
 
-  // Lấy thông tin user từ danh sách dựa trên vai trò
-  const user = users.find((u) => u.role === userRole);
+  // Gọi API để lấy thông tin vé
+  useEffect(() => {
+    if (!userId) {
+      Alert.alert('Lỗi', 'Không tìm thấy thông tin người dùng!');
+      return;
+    }
 
-  const handlePress = (ticket) => {
-    console.log(ticket);
-  };
+    const fetchTickets = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/tickets/${userId}`);
+        setTickets(response.data); // Lưu dữ liệu vé vào state
+      } catch (error) {
+        console.error(error);
+        Alert.alert('Lỗi', 'Không thể lấy thông tin vé!');
+      } finally {
+        setLoading(false); // Tắt trạng thái tải
+      }
+    };
 
+    fetchTickets();
+  }, [userId]);
+
+  // Xử lý trạng thái vé
   const handleStatus = (status) => {
-    if (status === 0 || status === 'Đã hủy') {
+    if (!status || status === 'Đã hủy') {
       return 'Đã hủy';
     }
     return 'Đã xác nhận';
   };
 
+  // Hiển thị thông tin vé
   const renderTicket = ({ item }) => (
-    <TouchableOpacity style={styles.ticketItem} onPress={() => handlePress(item)}>
+    <TouchableOpacity style={styles.ticketItem}>
       <View>
-        {/* Các điểm trang trí tương tự TicketsManagement */}
         <View style={styles.decorDotLeft}></View>
         <View style={styles.decorDotRight}></View>
         <Text style={styles.ticketInfo}>🎬 Phim: {item.movie_title}</Text>
         <Text style={styles.ticketInfo}>📍 Rạp: {item.cinema_name}</Text>
-        <Text style={styles.ticketInfo}>⏰ Thời gian: {new Date(item.showtime).toLocaleString()}</Text>
+        <Text style={styles.ticketInfo}>
+          ⏰ Thời gian: {new Date(item.showtime).toLocaleString()}
+        </Text>
         <Text style={styles.ticketInfo}>💺 Ghế: {item.seat_number}</Text>
-        <Text style={styles.ticketInfo}>📜 Trạng thái: {handleStatus(item.status)}</Text>
-        <Text style={styles.ticketInfo}>💵 Tổng tiền: {item.totalPrice || 0} VNĐ</Text>
+        <Text style={styles.ticketInfo}>
+          📜 Trạng thái: {handleStatus(item.status)}
+        </Text>
+        <Text style={styles.ticketInfo}>
+          💵 Tổng tiền: {item.total_price?.toLocaleString() || 0} VNĐ
+        </Text>
       </View>
     </TouchableOpacity>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#ff0000" />
+      </View>
+    );
+  }
+
+  if (tickets.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.noTicketText}>Bạn chưa có vé nào!</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <FlatList
-        data={user.booking}
-        keyExtractor={(item) => item.bookingId}
+        data={tickets}
+        keyExtractor={(item, index) => index.toString()} // Sử dụng index làm key
         renderItem={renderTicket}
       />
     </View>
@@ -84,6 +133,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: -25,
     top: 28,
+  },
+  noTicketText: {
+    color: '#fff',
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 20,
   },
 });
 

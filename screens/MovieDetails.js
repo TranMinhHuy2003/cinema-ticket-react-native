@@ -1,80 +1,76 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Image, ScrollView, Button, StyleSheet, Dimensions,TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  Button,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import axios from "axios";
 import YoutubeIframe from "react-native-youtube-iframe";
-import { API_URL, VID_API } from "@env";
+import { API_URL } from "@env";
 
 const { width } = Dimensions.get("window");
 
 const MovieDetail = ({ route, navigation }) => {
-  // const { movieId } = route.params;
-  // const [movie, setMovie] = useState(null);
-  const [showFullDescription, setShowFullDescription] = useState(false);
+  const { movieId } = route.params; // Nhận movieId từ route
+  const [movie, setMovie] = useState(null); // Dữ liệu phim
+  const [loading, setLoading] = useState(true); // Trạng thái tải dữ liệu
+  const [showFullDescription, setShowFullDescription] = useState(false); // Hiển thị toàn bộ nội dung mô tả
 
-  // useEffect(() => {
-  //   axios
-  //   .get(http://192.168.0.107:8000/movies/${movieId})
-  //   .then((response) => setMovie(response.data))
-  //   .catch((error) => console.error(error))
-  // }, []);
-
-  // if (!movie) {
-  //   return <Text>Loading...</Text>;
-  // }
-
-  const movies = [
-    {
-      posterUrl: "https://i.ebayimg.com/images/g/B8oAAOSw2fdg5A-h/s-l1200.jpg",
-      title: "INCEPTION",
-      genres: ["Action", "Sci-Fi", "Thriller"],
-      duration: 148,
-      releaseDate: "2010-07-16",
-      imdbRating: 8.8,
-      rottenTomatoesRating: 87,
-      description:
-      "A skilled thief, the absolute best in the dangerous art of extraction, steals valuable secrets from deep within the subconscious during the dream state.",
-      trailerUrl: "LifqWf0BAOA",
-    },
-  ];
-  
-  const movie = movies[0];
-
-  const fetchYoutubeMeta = async (videoId) => {
-    const apiKey = VID_API;
-    const url = `https://www.googleapis.com/youtube/v3/videos?id=${movie.trailerUrl}&key=${apiKey}&part=snippet,contentDetails,statistics`;
-  
-    try {
-      const response = await fetch(url);
-      const data = await response.json();
-      if (data.items && data.items.length > 0) {
-        return data.items.snippet;
-      }
-    } catch (error) {
-      console.error("Error fetching video metadata:", error);
-    }
-  };
-
+  // Gọi API để lấy dữ liệu phim
   useEffect(() => {
-    const fetchData = async () => {
-      const metadata = await fetchYoutubeMeta(movie.trailerUrl);
-      if (metadata) {
-        setVideoTitle(metadata.title);
-        setVideoDescription(metadata.description);
+    const fetchMovie = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/movies/${movieId}`);
+        setMovie(response.data);
+      } catch (error) {
+        console.error(error);
+        Alert.alert("Lỗi", "Không thể tải thông tin phim!");
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchData();
-  }, [movie.trailerUrl]);
+    fetchMovie();
+  }, [movieId]);
 
-  const formattedDuration = `${Math.floor(movie.duration / 60)} giờ ${movie.duration % 60} phút`;
-  const formattedReleaseDate = new Date(movie.releaseDate).toLocaleDateString("en-GB");
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF0000" />
+      </View>
+    );
+  }
 
-  const displayDescription = showFullDescription ? movie.description : movie.description.split(" ").slice(0, 25).join(" ") + "...";
+  if (!movie) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Không tìm thấy thông tin phim!</Text>
+      </View>
+    );
+  }
+
+  // Định dạng dữ liệu
+  const formattedDuration = `${Math.floor(movie.duration / 60)} giờ ${
+    movie.duration % 60
+  } phút`;
+  const formattedReleaseDate = new Date(movie.releaseDate).toLocaleDateString(
+    "en-GB"
+  );
+  const displayDescription = showFullDescription
+    ? movie.description
+    : movie.description.split(" ").slice(0, 25).join(" ") + "...";
+
   const isRotten = movie.rottenTomatoesRating < 60;
-  const rottenTomatoesIcon = isRotten ? 
-  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Rotten_Tomatoes_rotten.svg/1200px-Rotten_Tomatoes_rotten.svg.png" :
-  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Rotten_Tomatoes.svg/757px-Rotten_Tomatoes.svg.png" ; 
+  const rottenTomatoesIcon = isRotten
+    ? "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Rotten_Tomatoes_rotten.svg/1200px-Rotten_Tomatoes_rotten.svg.png"
+    : "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Rotten_Tomatoes.svg/757px-Rotten_Tomatoes.svg.png";
 
   return (
     <View style={styles.container}>
@@ -82,7 +78,6 @@ const MovieDetail = ({ route, navigation }) => {
         <YoutubeIframe
           height={width * 0.55}
           videoId={movie.trailerUrl}
-          // videoId={movieId}
           onError={(e) => console.log(e)}
           onReady={() => console.log("Video is ready")}
         />
@@ -109,20 +104,24 @@ const MovieDetail = ({ route, navigation }) => {
             </View>
           </View>
         </View>
-        
+
         <View style={styles.line}></View>
         <Text style={styles.contentTitle}>Đánh giá</Text>
         <View style={styles.ratingContainer}>
-          <View style={[styles.ratingBox, {flex: 1}]}>
+          <View style={[styles.ratingBox, { flex: 1 }]}>
             <Image
-              source={{ uri: "https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/171_Imdb_logo_logos-512.png" }}
+              source={{
+                uri: "https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/171_Imdb_logo_logos-512.png",
+              }}
               style={styles.ratingIcon}
             />
             <Text style={styles.ratingText}>IMDb: {movie.imdbRating}</Text>
           </View>
-          <View style={[styles.ratingBox, {flex: 2}]}>
+          <View style={[styles.ratingBox, { flex: 2 }]}>
             <Image source={{ uri: rottenTomatoesIcon }} style={styles.ratingIcon} />
-            <Text style={styles.ratingText}>Rotten Tomatoes: {movie.rottenTomatoesRating}%</Text>
+            <Text style={styles.ratingText}>
+              Rotten Tomatoes: {movie.rottenTomatoesRating}%
+            </Text>
           </View>
         </View>
 
@@ -130,7 +129,9 @@ const MovieDetail = ({ route, navigation }) => {
         <Text style={styles.contentTitle}>Nội dung</Text>
         <Text style={styles.description}>
           {displayDescription}
-          <TouchableOpacity onPress={() => setShowFullDescription(!showFullDescription)}>
+          <TouchableOpacity
+            onPress={() => setShowFullDescription(!showFullDescription)}
+          >
             <Text style={styles.readMoreText}>
               {showFullDescription ? "Thu gọn" : "Xem thêm"}
             </Text>
@@ -141,7 +142,9 @@ const MovieDetail = ({ route, navigation }) => {
       <View style={styles.buttonContainer}>
         <Button
           title="Đặt Vé Ngay"
-          onPress={() => navigation.navigate("BookingTheater", { movieTitle: movie.title })}
+          onPress={() =>
+            navigation.navigate("BookingTheater", { movieTitle: movie.title })
+          }
           color="#FF0000"
         />
       </View>
@@ -208,9 +211,9 @@ const styles = StyleSheet.create({
     marginVertical: 5,
   },
   line: {
-    borderTopColor: '#FFF',
+    borderTopColor: "#FFF",
     borderWidth: 1,
-    marginVertical: 10
+    marginVertical: 10,
   },
   contentTitle: {
     color: "#fff",
@@ -218,13 +221,11 @@ const styles = StyleSheet.create({
   },
   ratingContainer: {
     marginVertical: 10,
-    flexDirection: 'row',
-    gap: 20,
+    flexDirection: "row",
   },
   ratingBox: {
     flexDirection: "row",
     alignItems: "center",
-    flex: 1,
   },
   ratingIcon: {
     width: 30,
@@ -239,7 +240,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginVertical: 10,
     fontSize: 16,
-    marginBottom: 70,
   },
   readMoreText: {
     color: "#FFD700",
@@ -249,6 +249,22 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
     padding: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1e1e1e",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1e1e1e",
+  },
+  errorText: {
+    color: "#FF0000",
+    fontSize: 18,
   },
 });
 

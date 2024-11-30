@@ -5,7 +5,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../../context/AuthContext';
 
 // Import các màn hình
-import HomeScreen from '../User/HomeScreen';
+import HomeScreen from './HomeScreen';
 import UserInfo from './UserInfo';
 import YourTicket from './YourTicket';
 
