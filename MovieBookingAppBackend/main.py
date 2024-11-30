@@ -17,13 +17,13 @@ load_dotenv()
 # Lấy thông tin từ biến môi trường
 PAYOS_API_KEY = os.getenv("PAYOS_API_KEY")
 PAYOS_CLIENT_ID = os.getenv("PAYOS_CLIENT_ID")
-PAYOS_CHECKSUM_KEY = os.getenv("PAYOS_CHECKSUM_KEY")
+PAYOS_CHECKSUM_KEY = os.getenv("PAYOS_CHECKSUM_KEY")from datetime import date, datetime, time, timedelta
 
 # Khởi tạo ứng dụng FastAPI
 app = FastAPI()
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(r"D:\StudyIT\Nam4Ki1\LTDNT\DoAn\MovieBookingAppBackend\moviebookingapp-435cc-firebase-adminsdk-hjrcs-55258e72df.json")
+    cred = credentials.Certificate(r"C:\Users\user\.vscode\code\IE307\project\MovieBookingApp\moviebookingapp-435cc-firebase-adminsdk-hjrcs-41cbbc379c.json")
     firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -45,16 +45,39 @@ app.add_middleware(
 
 # Models cho phim và booking
 class Movie(BaseModel):
-    title: str
-    description: str
-    posterUrl: str
-    trailerUrl: str
-    releaseDate: datetime = "1999-03-30T17:00:00.610000Z"
-    duration: Optional[int]
-    genres: Optional[List[str]] = None
-    imdbRating: Optional[float] = 1.5
-    rottenTomatoesRating: Optional[int] = 1
-    showtimes: Optional[dict] = {}  # {'timeId': {'time': '2024-09-20T19:00:00', 'seats': {'A1': True, 'A2': False}}}
+  id: Optional[str] = ""
+  title: str = ""
+  description: str = ""
+  posterUrl: str = ""
+  trailerUrl: str = ""
+  duration: int = 1
+  genres: List[str] = None
+  imdbRating: Optional[float] = 1.5
+  rottenTomatoesRating: Optional[int] = 1
+  releaseDate: datetime = "1999-03-30T17:00:00.610000Z"
+  showtimes: Optional[dict] = {}  # {'timeId': {'time': '2024-09-20T19:00:00', 'seats': {'A1': True, 'A2': False}}}
+
+class Ticket(BaseModel):
+  id: Optional[str] = ""
+  user_id: str = ""
+  movie_title: str = ""
+  cinema_name: str = ""
+  showtime: datetime = "1999-03-30T17:00:00.610000Z"
+  seat_number: str = ""
+  status: int = 1
+  price: int = 1
+  created_at: datetime = "1999-03-30T17:00:00.610000Z"
+  updated_at: datetime = "1999-03-30T17:00:00.610000Z"
+  
+class User(BaseModel):
+  id: Optional[str] = ""
+  name: str = ""
+  email: str = ""
+  dob: datetime = "1999-03-30T17:00:00.610000Z"
+  gender: int = 1
+  phone_number: str = ""
+  is_admin: bool = False
+  bookings: Optional[dict] = {}
 
 class Booking(BaseModel):
     user_id: str
@@ -84,24 +107,17 @@ def get_current_admin_user():
 # # 1. Lấy danh sách phim
 @app.get("/movies", response_model=List[Movie])
 async def get_movies():
-    movies_ref = db.collection('movies')
-    movies = movies_ref.stream()
+    movies_ref = db.collection('movies').get()
     movie_list = []
-    for movie in movies:
-        movie_list.append(movie.to_dict())
+
+    for movie in movies_ref:
+        movie_data = movie.to_dict()
+        movie_data["id"] = movie.id  
+        movie_list.append(movie_data)
+
     return movie_list
 
-# 2. Lấy thông tin chi tiết của một phim
-@app.get("/movies/{movie_id}", response_model=Movie)
-async def get_movie(movie_id: str):
-    movie_ref = db.collection('movies').document(movie_id)
-    movie = movie_ref.get()
-    if movie.exists:
-        return movie.to_dict()
-    raise HTTPException(status_code=404, detail="Movie not found")
-
-# 3. Thêm phim mới (chỉ admin)
-@app.post("/movies", response_model=str)
+@app.post("/movies/")
 async def add_movie(movie: Movie, admin: bool = Depends(get_current_admin_user)):
     if not admin:
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -136,6 +152,43 @@ SEAT_PRICES = {
     "vip": 150000,
     "normal": 100000
 }
+
+#Get tickets
+@app.get("/tickets", response_model=List[Ticket])
+async def get_tickets():
+    tickets_ref = db.collection('tickets').get()
+    ticket_list = []
+
+    for ticket in tickets_ref:
+        ticket_data = ticket.to_dict()
+        ticket_data["id"] = ticket.id  
+        ticket_list.append(ticket_data)
+
+    return ticket_list
+
+#Delete Ticket
+@app.delete("/tickets/{ticket_id}", response_model=str)
+async def delete_ticket(ticket_id: str, admin: bool = Depends(get_current_admin_user)):
+    if not admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    ticket_ref = db.collection('tickets').document(ticket_id)
+    if not ticket_ref.get().exists:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    ticket_ref.delete()
+    return ticket_id
+
+#Get users
+@app.get("/users", response_model=List[User])
+async def get_users():
+    users_ref = db.collection('users').get()
+    user_list = []
+
+    for user in users_ref:
+        user_data = user.to_dict()
+        user_data["id"] = user.id  
+        user_list.append(user_data)
+
+    return user_list
 
 # 6. Đặt vé
 @app.post("/bookings/", response_model=BookingResponse)

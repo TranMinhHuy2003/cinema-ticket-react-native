@@ -11,6 +11,7 @@
   "dependencies": {
     "@expo/metro-runtime": "~3.2.3",
     "@react-native-community/datetimepicker": "8.0.1",
+    "@react-native-picker/picker": "^2.9.0",
     "@react-navigation/drawer": "^6.7.2",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.11.0",
@@ -23,6 +24,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.74.5",
+    "react-native-date-picker": "^5.0.7",
     "react-native-datepicker": "^1.7.2",
     "react-native-dotenv": "^3.4.11",
     "react-native-gesture-handler": "2.16.1",
@@ -32,6 +34,7 @@
     "react-native-screens": "^3.31.1",
     "react-native-ui-datepicker": "^2.0.4",
     "react-native-video": "^6.6.2",
+    "react-native-virtualized-view": "^1.0.0",
     "react-native-web": "^0.19.13",
     "react-native-web-webview": "^1.0.2",
     "react-native-webview": "^13.8.6",

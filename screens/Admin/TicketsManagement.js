@@ -1,10 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, Button, Alert, TouchableOpacity, StyleSheet } from 'react-native';
-import { tickets } from './data';
+import { useFocusEffect } from '@react-navigation/native';
+import axios from 'axios';
 
 const TicketsManagement = ({ navigation }) => {
-  const handlePress = (ticket) => {
-    navigation.navigate('TicketDetail', { ticket });
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchTickets = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('http://192.168.1.5:8000/tickets');
+      setTickets(response.data);
+    } catch (error) {
+      console.error('Failed to fetch tickets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchTickets(); // Cập nhật dữ liệu khi quay lại màn hình
+    }, [])
+  );
+  const handlePress = (ticket, ticket_id) => {
+    navigation.navigate('TicketDetail', { ticket, ticket_id });
   };
 
   const handleStatus = (status) => {
@@ -15,7 +36,7 @@ const TicketsManagement = ({ navigation }) => {
   };
 
   const renderTicket = ({ item }) => (
-    <TouchableOpacity style={styles.ticketItem} onPress={() => handlePress(item)}>
+    <TouchableOpacity style={styles.ticketItem} onPress={() => handlePress(item, item.id)}>
       <View>
         <View style={{width: 20, height: 20, backgroundColor: '#1e1e1e', borderRadius: 100, position: "absolute", left: -35, top: -2}}></View>
         <View style={{width: 20, height: 20, backgroundColor: '#1e1e1e', borderRadius: 100, position: "absolute", left: -35, top: 28}}></View>
