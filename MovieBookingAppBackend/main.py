@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from datetime import date, datetime, time, timedelta
+from google.api_core.datetime_helpers import DatetimeWithNanoseconds
 
 # Tải các biến môi trường từ file .env
 load_dotenv()
@@ -18,12 +19,13 @@ load_dotenv()
 PAYOS_API_KEY = os.getenv("PAYOS_API_KEY")
 PAYOS_CLIENT_ID = os.getenv("PAYOS_CLIENT_ID")
 PAYOS_CHECKSUM_KEY = os.getenv("PAYOS_CHECKSUM_KEY")
+API_URL = os.getenv("API_URL")
 
 # Khởi tạo ứng dụng FastAPI
 app = FastAPI()
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(r"D:\da_nen_tang\moviebookingapp-435cc-firebase-adminsdk-hjrcs-ce75e87f0f.json")
+    cred = credentials.Certificate(r"D:\StudyIT\Nam4Ki1\LTDNT\DoAn\MovieBookingAppBackend\moviebookingapp-435cc-firebase-adminsdk-hjrcs-55258e72df.json")
     firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -67,7 +69,8 @@ class Ticket(BaseModel):
   price: int = 1
   created_at: datetime = "1999-03-30T17:00:00.610000Z"
   updated_at: datetime = "1999-03-30T17:00:00.610000Z"
-  
+  cancel_reason: str = ""
+
 class User(BaseModel):
   name: str = ""
   email: str = ""
@@ -75,13 +78,12 @@ class User(BaseModel):
   gender: int = 1
   phone_number: str = ""
   is_admin: bool = False
-  bookings: Optional[dict] = {}
   created_at: datetime = "2024-11-30T17:00:00.610000Z"
+  point: int = 1
 
 # Model cho booking response
 class BookingResponse(BaseModel):
     ticket_ids: List[str]
-    total_price: int
 
 # Model thanh toán
 class PaymentRequest(BaseModel):
@@ -194,13 +196,27 @@ async def get_users():
 
     return user_list
 
+def normalize_to_datetime(value):
+    if isinstance(value, str):
+        # Xử lý chuỗi ISO 8601
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    elif isinstance(value, DatetimeWithNanoseconds):
+        # Xử lý Firestore DatetimeWithNanoseconds
+        return datetime.fromisoformat(value.isoformat())
+    elif isinstance(value, datetime):
+        # Đã là datetime
+        return value
+    else:
+        raise ValueError(f"Không thể chuyển đổi giá trị: {value}")
+
 # 6. Đặt vé
 @app.post("/bookings/", response_model=BookingResponse)
-async def book_ticket(booking: Ticket):
+async def book_ticket(booking_data: dict):
+    print(booking_data)
     # 1. Tìm phim trong collection movies theo movie_id
-    movie_ref = db.collection('movies').document(booking.movie_id)
+    movie_ref = db.collection('movies').document(booking_data['movie_id'])
     movie = movie_ref.get()
-    
+
     if not movie.exists:
         raise HTTPException(status_code=404, detail="Movie not found")
 
@@ -209,8 +225,12 @@ async def book_ticket(booking: Ticket):
     
     # 2. Kiểm tra xem showtime trong booking có trùng với thời gian bắt đầu của showtimes trong movie không
     showtime_match = None
+    print(type(booking_data['showtime']))
+    print(booking_data['showtime'])
     for showtime_key, showtime_data in movie_showtimes.items():
-        if showtime_data['start_time'] == booking.showtime:
+        print(type(showtime_data['start_time']))
+        print(showtime_data['start_time'])
+        if normalize_to_datetime(showtime_data['start_time']) == normalize_to_datetime(booking_data['showtime']):
             showtime_match = showtime_data
             break
     
@@ -219,62 +239,49 @@ async def book_ticket(booking: Ticket):
 
     # 3. Kiểm tra và cập nhật trạng thái ghế
     seats_dict = {seat['seat']: seat for seat in showtime_match['seats']}
-    total_price = 0
-    
-    for seat_code in booking.seats:
+    print(seats_dict)
+    tickets_created = []  # Danh sách chứa các vé đã được tạo
+    total_price = 0  # Tổng giá vé
+
+    seats = booking_data.pop('seats')
+    totalPrice = booking_data.pop('total_price')
+
+    # Duyệt qua các ghế đã chọn và kiểm tra tính khả dụng
+    for seat_code in seats:
         seat = seats_dict.get(seat_code)
-        if not seat:
-            raise HTTPException(status_code=404, detail=f"Seat {seat_code} not found")
-        if not seat['available']:
-            raise HTTPException(status_code=400, detail=f"Seat {seat_code} is already booked")
-        
+        print(seat)
         # Cập nhật trạng thái ghế (đánh dấu ghế đã đặt)
         seat['available'] = False
-        total_price += SEAT_PRICES[seat['type']]
 
-    # Cập nhật lại thông tin ghế trong Firestore
-    movie_ref.update({f'showtimes.{showtime_key}.seats': list(seats_dict.values())})
+        # Lấy giá của ghế và cộng vào tổng giá vé
+        seat_price = SEAT_PRICES.get(seat['type'], 100000)  # Giá mặc định là 100000 nếu không tìm thấy loại ghế
+        total_price += seat_price
 
-    # 4. Tạo booking trong collection `users`
-    user_ref = db.collection('users').document(booking.user_id)
-    user = user_ref.get()
-    if not user.exists:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    user_data = user.to_dict()
-    new_booking = {
-        "movie_title": movie_data['title'],
-        "cinema_name": showtime_match['cinema']['cinema_name'],
-        "showtime": booking.showtime,
-        "seats": booking.seats,
-        "total_price": total_price
-    }
-    
-    # Thêm booking vào subcollection bookings của người dùng
-    user_ref.collection('bookings').add(new_booking)
+        # Tạo vé cho ghế này (Chỉ lưu seat_number thay vì seats)
+        created_at = datetime.now() - timedelta(hours=7)  # Tính thời gian tạo vé theo giờ UTC+7
+        ticket_data = booking_data
+        # ticket_data['user_id'] = booking_data.user_id
+        # ticket_data['movie_title'] = booking_data.movie_title
+        # ticket_data['cinema_name'] = booking_data.cinema_name
+        # ticket_data['showtime'] = booking_data.showtime
+        ticket_data['seat_number'] = seat_code  # Lưu ghế đã đặt
+        ticket_data['status'] = 1  # Trạng thái "Đã đặt"
+        ticket_data['price'] = SEAT_PRICES[seats_dict[seat_code]['type']]
+        ticket_data['created_at'] = created_at
+        ticket_data['updated_at'] = created_at
 
-    # 5. Tạo vé trong collection `tickets`
-    created_at = datetime.now() - timedelta(hours=7)
-    ticket_ids = []
-    
-    for seat_code in booking.seats:
-        ticket_data = {
-            "user_id": booking.user_id,
-            "movie_title": movie_data['title'],
-            "cinema_name": showtime_match['cinema']['cinema_name'],
-            "showtime": booking.showtime,
-            "seat_number": seat_code,
-            "status": "confirmed",
-            "price": SEAT_PRICES[seats_dict[seat_code]['type']],
-            "created_at": created_at,
-            "updated_at": created_at,
-        }
+        # Không lưu trường 'seats' vào Firestore
         ticket_ref = db.collection('tickets').document()
         ticket_ref.set(ticket_data)
-        ticket_ids.append(ticket_ref.id)
 
-    # Trả về object BookingResponse
-    return BookingResponse(ticket_ids=ticket_ids, total_price=total_price)
+        tickets_created.append(ticket_ref.id)  # Thêm ID vé vào danh sách đã tạo
+
+    # Cập nhật lại thông tin ghế trong Firestore sau khi booking
+    movie_ref.update({f'showtimes.{showtime_key}.seats': list(seats_dict.values())})
+
+    return BookingResponse(
+        ticket_ids=tickets_created,  # Trả về danh sách ID các vé đã tạo
+    )
 
 # 7. Xem danh sách vé đã đặt của khách hàng
 @app.get("/bookings/{user_id}", response_model=List[Ticket])
@@ -289,7 +296,10 @@ async def get_user_bookings(user_id: str):
 # 8. Tạo liên kết thanh toán
 @app.post("/payment")
 async def create_payment_link(payment_request: PaymentRequest):
-    domain = "http://192.168.0.103:8000"
+    domain = API_URL
+    # nhận selectedSeats, kiểm tra toàn bộ ghế có available không
+    # nếu không available thì trả về thông báo ghế đã được đặt
+    # nếu available thì khóa các ghế trong selectedSeats (available: false)
     try:
         payment_data = PaymentData(
             orderCode=payment_request.order_id,

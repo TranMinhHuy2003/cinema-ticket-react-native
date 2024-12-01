@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions, ScrollView } from "react-native";
 import axios from "axios";
+import { API_URL } from '@env';
 
 const { width } = Dimensions.get("window");
 
@@ -16,7 +17,7 @@ const BookingSeats = ({ route, navigation }) => {
   useEffect(() => {
     const fetchSeats = async () => {
       try {
-        const response = await axios.get(`http://192.168.0.103:8000/movies/${movieId}`);
+        const response = await axios.get(`${API_URL}/movies/${movieId}`);
 
         // Kiểm tra showtimes là một object
         if (typeof response.data.showtimes === "object" && response.data.showtimes !== null) {

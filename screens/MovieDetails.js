@@ -8,8 +8,7 @@ import { API_URL, VID_API } from "@env";
 const { width } = Dimensions.get("window");
 
 const MovieDetails = ({ route, navigation }) => {
-  // const { movieId } = route.params;
-  const movieId = '9VWbUXgGI4I842JG78bc';
+  const { movieId } = route.params;
   const [movie, setMovie] = useState(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
@@ -17,7 +16,7 @@ const MovieDetails = ({ route, navigation }) => {
   useEffect(() => {
     const fetchMovieDetails = async () => {
       try {
-        const response = await axios.get(`http://192.168.0.103:8000/movies/${movieId}`);
+        const response = await axios.get(`${API_URL}/movies/${movieId}`);
         setMovie(response.data);
       } catch (error) {
         console.error("Error fetching movie details:", error);
@@ -25,6 +24,14 @@ const MovieDetails = ({ route, navigation }) => {
     };
     fetchMovieDetails();
   }, [movieId]);
+
+  const extractVideoId = (url) => {
+    const regex = /(?:\?v=|\/embed\/|\/1\/|\/v\/|youtu\.be\/|\/watch\?v=|&v=|\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  };
+  
+  const videoId = movie?.trailerUrl ? extractVideoId(movie.trailerUrl) : null;
 
   const fetchYoutubeMeta = async () => {
     const apiKey = VID_API;
@@ -74,7 +81,7 @@ const MovieDetails = ({ route, navigation }) => {
       <ScrollView>
         <YoutubeIframe
           height={width * 0.55}
-          videoId={movie.trailerUrl}
+          videoId={videoId}
           onError={(e) => console.log(e)}
           onReady={() => console.log("Video is ready")}
         />
