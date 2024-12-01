@@ -2,11 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, Dimensions, Alert } from 'react-native';
 import { WebView } from 'react-native-webview';
 import axios from 'axios';
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import { API_URL } from '@env';
 
 const { width } = Dimensions.get("window");
 
 const Payment = ({ route, navigation }) => {
+  const { userId } = useContext(AuthContext);
   const { originShowtime, selectedDate, selectedShowtime, selectedTheater, selectedHall, movieId, movieTitle, moviePoster, selectedSeats, totalPrice } = route.params;
+  console.log(originShowtime)
   const [orderId, setOrderId] = useState(null);
   const [checkoutUrl, setCheckoutUrl] = useState(null);
   const description = "Mua vé xem phim";
@@ -62,7 +67,7 @@ const Payment = ({ route, navigation }) => {
     };
 
     try {
-      const response = await axios.post('http://192.168.0.103:8000/payment', paymentData);
+      const response = await axios.post(`${API_URL}/payment`, paymentData); // truyền thêm selectedSeats
       if (response.data.checkoutUrl) {
         setCheckoutUrl(response.data.checkoutUrl)
       } else {
@@ -83,26 +88,28 @@ const Payment = ({ route, navigation }) => {
           if (navState.url.includes('/success')) {
             // Gọi API POST /bookings để lưu thông tin đặt vé
             const bookingData = {
-              user_id: "LopsaIAr5mpxeEuSrw2x", // Lấy từ auth
+              user_id: userId, // Lấy từ auth
               movie_id: movieId, // Phải truyền từ phía trước
               movie_title: movieTitle, // Tiêu đề phim, truyền từ phía trước
               cinema_name: selectedTheater, // Tên rạp, truyền từ phía trước
+              hall_name: selectedHall,
               showtime: originShowtime,
               seats: selectedSeats, // Mảng ghế đã chọn
               total_price: totalPrice, // Tổng giá vé, cần tính toán từ phía trước
             };
   
             try {
-              await axios.post('http://192.168.0.103:8000/bookings/', bookingData);
+              await axios.post(`${API_URL}/bookings/`, bookingData);
               Alert.alert('Success', 'Thanh toán thành công và đặt vé hoàn tất');
               setCheckoutUrl(null);
-              // navigation.navigate('Home'); // Điều hướng về trang chính sau khi thành công
-              navigation.navigate('MovieDetail');
+              navigation.navigate('MovieList');
             } catch (error) {
+              // Mở các ghế đã đặt trong selectedSeats (available: true)
               Alert.alert('Error', error.response?.data?.detail || 'Đặt vé thất bại');
               setCheckoutUrl(null);
             }
           } else if (navState.url.includes('/cancel')) {
+            // Mở các ghế đã đặt trong selectedSeats (available: true)
             Alert.alert('Cancelled', 'Thanh toán bị hủy');
             setCheckoutUrl(null); // Quay lại màn hình chính
           }

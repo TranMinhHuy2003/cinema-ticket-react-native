@@ -90,7 +90,7 @@ const Booking = ({ route, navigation }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`http://192.168.0.103:8000/movies/${movieId}`);
+        const response = await axios.get(`${API_URL}/movies/${movieId}`);
         const formattedData = formatMovieData(response.data);
 
         // Nhóm dữ liệu theo rạp và ngày
