@@ -9,6 +9,7 @@ import {
   ScrollView,
 } from "react-native";
 import { cinemas } from './data'
+import { API_URL } from '@env';
 
 const ShowtimeManagementScreen = ({ route, navigation }) => {
   const { movie } = route.params; // Nhận dữ liệu phim từ navigation

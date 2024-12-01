@@ -4,6 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import {Keyboard} from 'react-native';
 import { format } from "date-fns";
 import axios from 'axios';
+import { API_URL } from '@env';
 
 const EditMovie = ({ route, navigation }) => {
   const { movie, movie_id } = route.params;
@@ -36,7 +37,7 @@ const EditMovie = ({ route, navigation }) => {
       Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin phim.");
       return;
     }
-    axios.put(`http://192.168.1.3:8000/movies/${movie_id}`, {
+    axios.put(`${API_URL}/movies/${movie_id}`, {
       title,
       description,
       posterUrl,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Button, Alert, Image } from 'react-native';
 import { format } from 'date-fns';
 import axios from 'axios';
+import { API_URL } from '@env';
 
 export default function TicketDetailsScreen ({ route, navigation }) {
   const [users, setUsers] = useState([]);
@@ -16,7 +17,7 @@ export default function TicketDetailsScreen ({ route, navigation }) {
 
   const fetchMovies = async () => {
     try {
-      const response = await axios.get('http://192.168.1.5:8000/movies');
+      const response = await axios.get(`${API_URL}/movies`);
       setMovies(response.data);
     } catch (error) {
       console.error('Failed to fetch movies:', error);
@@ -25,7 +26,7 @@ export default function TicketDetailsScreen ({ route, navigation }) {
   
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('http://192.168.1.5:8000/users');
+      const response = await axios.get(`${API_URL}/users`);
       setUsers(response.data);
     } catch (error) {
       console.error('Failed to fetch users:', error);
@@ -54,7 +55,7 @@ export default function TicketDetailsScreen ({ route, navigation }) {
       {
         text: "Xóa",
         onPress: () => {
-          axios.delete(`http://192.168.1.5:8000/tickets/${ticket_id}`, {
+          axios.delete(`${API_URL}/tickets/${ticket_id}`, {
           })
           .then(() => {
             alert('Xóa vé thành công!');

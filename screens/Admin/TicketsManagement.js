@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, Button, Alert, TouchableOpacity, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
+import { API_URL } from '@env';
 
 const TicketsManagement = ({ navigation }) => {
   const [tickets, setTickets] = useState([]);
@@ -10,7 +11,7 @@ const TicketsManagement = ({ navigation }) => {
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://192.168.1.5:8000/tickets');
+      const response = await axios.get(`${API_URL}/tickets`);
       setTickets(response.data);
     } catch (error) {
       console.error('Failed to fetch tickets:', error);
