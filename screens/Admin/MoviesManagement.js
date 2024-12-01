@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
+import { API_URL } from '@env';
 
 export default function MoviesManagement() {
   const [movies, setMovies] = useState([]);
@@ -13,8 +14,9 @@ export default function MoviesManagement() {
   const fetchMovies = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://192.168.1.5:8000/movies');
+      const response = await axios.get(`${API_URL}/movies`);
       setMovies(response.data);
+      console.log(response.data[0].id);
     } catch (error) {
       console.error('Failed to fetch movies:', error);
     } finally {
@@ -38,7 +40,7 @@ export default function MoviesManagement() {
       {
         text: "Xóa",
         onPress: () => {
-          axios.delete(`http://192.168.1.5:8000/movies/${movie_id}`, {
+          axios.delete(`${API_URL}/movies/${movie_id}`, {
           })
           .then(() => {
             alert('Xóa phim thành công!');

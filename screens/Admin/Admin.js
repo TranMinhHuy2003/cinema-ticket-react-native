@@ -1,9 +1,10 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useContext } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { AuthContext } from '../../context/AuthContext';
 
 // Import các màn hình
 import Dashboard from './Dashboard';
@@ -19,10 +20,10 @@ import EditShowtimeScreen from './EditShowtimeScreen';
 // import TicketsManagement from './TicketsManagement';
 // import SeatsManagement from './SeatsManagement';
 
-// Tạo Drawer Navigator
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 
+// Kiểm tra các route để ẩn hoặc hiện header của Drawer
 function getHiddenDrawer(route) {
   const routeName = getFocusedRouteNameFromRoute(route) ?? 'MoviesManagement';
 
@@ -44,20 +45,21 @@ function getHiddenDrawer(route) {
   }
 }
 
+// Stack Navigator cho quản lý phim
 function AdminMovie() {
   return (
     <Stack.Navigator initialRouteName="MoviesManagement">
-      <Stack.Screen 
-        name="MoviesManagement" 
-        component={MoviesManagement} 
-        options={{ 
-          title: 'Quản lý phim', 
+      <Stack.Screen
+        name="MoviesManagement"
+        component={MoviesManagement}
+        options={{
+          title: 'Quản lý phim',
           headerShown: false
-        }} 
+        }}
       />
-      <Stack.Screen 
-        name="EditMovie" 
-        component={EditMovie} 
+      <Stack.Screen
+        name="EditMovie"
+        component={EditMovie}
         options={({ navigation }) => ({
           title: 'Chỉnh sửa phim',
           headerLeft: () => (
@@ -74,13 +76,13 @@ function AdminMovie() {
           },
           headerTintColor: '#fff',
           headerTitleStyle: {
-            fontWeight: 'bold'
-          }
+            fontWeight: 'bold',
+          },
         })}
       />
-      <Stack.Screen 
-        name="AddMovie" 
-        component={AddMovie} 
+      <Stack.Screen
+        name="AddMovie"
+        component={AddMovie}
         options={({ navigation }) => ({
           title: 'Thêm phim mới',
           headerLeft: () => (
@@ -97,28 +99,29 @@ function AdminMovie() {
           },
           headerTintColor: '#fff',
           headerTitleStyle: {
-            fontWeight: 'bold'
-          }
+            fontWeight: 'bold',
+          },
         })}
       />
     </Stack.Navigator>
   );
 }
 
+// Stack Navigator cho quản lý vé
 function AdminTicket() {
   return (
     <Stack.Navigator initialRouteName="TicketsManagement">
-      <Stack.Screen 
-        name="TicketsManagement" 
-        component={TicketsManagement} 
-        options={{ 
-          title: 'Quản lý vé', 
-          headerShown: false
-        }} 
+      <Stack.Screen
+        name="TicketsManagement"
+        component={TicketsManagement}
+        options={{
+          title: 'Quản lý vé',
+          headerShown: false,
+        }}
       />
-      <Stack.Screen 
-        name="TicketDetail" 
-        component={TicketDetail} 
+      <Stack.Screen
+        name="TicketDetail"
+        component={TicketDetail}
         options={({ navigation }) => ({
           title: 'Chi tiết vé',
           headerLeft: () => (
@@ -135,8 +138,8 @@ function AdminTicket() {
           },
           headerTintColor: '#fff',
           headerTitleStyle: {
-            fontWeight: 'bold'
-          }
+            fontWeight: 'bold',
+          },
         })}
       />
     </Stack.Navigator>
@@ -146,17 +149,17 @@ function AdminTicket() {
 function AdminShowtime() {
   return (
     <Stack.Navigator initialRouteName="MoviesShowtime">
-      <Stack.Screen 
-        name="MoviesShowtime" 
-        component={MoviesShowtime} 
-        options={{ 
-          title: 'Quản lý suất chiếu', 
+      <Stack.Screen
+        name="MoviesShowtime"
+        component={MoviesShowtime}
+        options={{
+          title: 'Quản lý suất chiếu',
           headerShown: false
-        }} 
+        }}
       />
-      <Stack.Screen 
-        name="ShowtimeManagement" 
-        component={ShowtimeManagement} 
+      <Stack.Screen
+        name="ShowtimeManagement"
+        component={ShowtimeManagement}
         options={({ navigation }) => ({
           headerLeft: () => (
             <Icon
@@ -176,9 +179,9 @@ function AdminShowtime() {
           }
         })}
       />
-      <Stack.Screen 
-        name="AddShowtimeScreen" 
-        component={AddShowtimeScreen} 
+      <Stack.Screen
+        name="AddShowtimeScreen"
+        component={AddShowtimeScreen}
         options={({ navigation }) => ({
           title: 'Thêm suất chiếu',
           headerLeft: () => (
@@ -199,9 +202,9 @@ function AdminShowtime() {
           }
         })}
       />
-      <Stack.Screen 
-        name="EditShowtimeScreen" 
-        component={EditShowtimeScreen} 
+      <Stack.Screen
+        name="EditShowtimeScreen"
+        component={EditShowtimeScreen}
         options={({ navigation }) => ({
           title: 'Sửa suất chiếu',
           headerLeft: () => (
@@ -226,10 +229,17 @@ function AdminShowtime() {
   );
 }
 
+// Drawer Navigator cho Admin
 export default function Admin() {
+  const { setIsAuthenticated, setUserRole } = useContext(AuthContext);
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setUserRole(null); // Reset trạng thái người dùng
+  };
+
   return (
-    <NavigationContainer>
-      <Drawer.Navigator 
+      <Drawer.Navigator
         initialRouteName="Dashboard"
         screenOptions={({ route }) => ({
           headerStyle: {
@@ -254,6 +264,5 @@ export default function Admin() {
         <Drawer.Screen name="Quản lý suất chiếu" component={AdminShowtime} />
         {/* <Drawer.Screen name="Seats Management" component={SeatsManagement} /> */}
       </Drawer.Navigator>
-    </NavigationContainer>
   );
 };

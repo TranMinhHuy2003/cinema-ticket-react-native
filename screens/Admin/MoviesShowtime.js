@@ -3,13 +3,14 @@ import { View, Text, Button, FlatList, StyleSheet, Image, Touchable } from 'reac
 import { useNavigation } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
 import axios from 'axios';
+import { API_URL } from '@env';
 
 export default function MoviesShowtime() {
   const [movies, setMovies] = useState([]);
 
   const fetchMovies = async () => {
     try {
-      const response = await axios.get('http://192.168.1.5:8000/movies');
+      const response = await axios.get(`${API_URL}/movies`);
       setMovies(response.data);
     } catch (error) {
       console.error('Failed to fetch movies:', error);

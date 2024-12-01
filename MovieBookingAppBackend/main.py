@@ -9,7 +9,7 @@ import os
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 # Tải các biến môi trường từ file .env
 load_dotenv()
@@ -17,13 +17,13 @@ load_dotenv()
 # Lấy thông tin từ biến môi trường
 PAYOS_API_KEY = os.getenv("PAYOS_API_KEY")
 PAYOS_CLIENT_ID = os.getenv("PAYOS_CLIENT_ID")
-PAYOS_CHECKSUM_KEY = os.getenv("PAYOS_CHECKSUM_KEY")from datetime import date, datetime, time, timedelta
+PAYOS_CHECKSUM_KEY = os.getenv("PAYOS_CHECKSUM_KEY")
 
 # Khởi tạo ứng dụng FastAPI
 app = FastAPI()
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(r"C:\Users\user\.vscode\code\IE307\project\MovieBookingApp\moviebookingapp-435cc-firebase-adminsdk-hjrcs-41cbbc379c.json")
+    cred = credentials.Certificate(r"D:\da_nen_tang\moviebookingapp-435cc-firebase-adminsdk-hjrcs-ce75e87f0f.json")
     firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -45,7 +45,6 @@ app.add_middleware(
 
 # Models cho phim và booking
 class Movie(BaseModel):
-  id: Optional[str] = ""
   title: str = ""
   description: str = ""
   posterUrl: str = ""
@@ -58,9 +57,9 @@ class Movie(BaseModel):
   showtimes: Optional[dict] = {}  # {'timeId': {'time': '2024-09-20T19:00:00', 'seats': {'A1': True, 'A2': False}}}
 
 class Ticket(BaseModel):
-  id: Optional[str] = ""
   user_id: str = ""
   movie_title: str = ""
+  movie_id: str
   cinema_name: str = ""
   showtime: datetime = "1999-03-30T17:00:00.610000Z"
   seat_number: str = ""
@@ -70,7 +69,6 @@ class Ticket(BaseModel):
   updated_at: datetime = "1999-03-30T17:00:00.610000Z"
   
 class User(BaseModel):
-  id: Optional[str] = ""
   name: str = ""
   email: str = ""
   dob: datetime = "1999-03-30T17:00:00.610000Z"
@@ -78,15 +76,7 @@ class User(BaseModel):
   phone_number: str = ""
   is_admin: bool = False
   bookings: Optional[dict] = {}
-
-class Booking(BaseModel):
-    user_id: str
-    movie_id: str
-    movie_title: str
-    cinema_name: str
-    showtime: datetime = "1999-03-30T17:00:00.610000Z"
-    seats: List[str] = []
-    total_price: int
+  created_at: datetime = "2024-11-30T17:00:00.610000Z"
 
 # Model cho booking response
 class BookingResponse(BaseModel):
@@ -105,17 +95,31 @@ def get_current_admin_user():
     return True  # Thay bằng logic xác thực thực tế
 
 # # 1. Lấy danh sách phim
-@app.get("/movies", response_model=List[Movie])
+@app.get("/movies", response_model=List[Dict])
 async def get_movies():
-    movies_ref = db.collection('movies').get()
+    """
+    API để lấy danh sách phim cùng với ID.
+    """
+    movies_ref = db.collection('movies')
+    movies = movies_ref.stream()
     movie_list = []
 
-    for movie in movies_ref:
-        movie_data = movie.to_dict()
-        movie_data["id"] = movie.id  
+    for movie in movies:
+        movie_data = movie.to_dict()  # Dữ liệu của phim
+        movie_data["id"] = movie.id  # Lấy ID của tài liệu
         movie_list.append(movie_data)
 
     return movie_list
+
+
+# 2. Lấy thông tin chi tiết của một phim
+@app.get("/movies/{movie_id}", response_model=Movie)
+async def get_movie(movie_id: str):
+    movie_ref = db.collection('movies').document(movie_id)
+    movie = movie_ref.get()
+    if movie.exists:
+        return movie.to_dict()
+    raise HTTPException(status_code=404, detail="Movie not found")
 
 @app.post("/movies/")
 async def add_movie(movie: Movie, admin: bool = Depends(get_current_admin_user)):
@@ -192,7 +196,7 @@ async def get_users():
 
 # 6. Đặt vé
 @app.post("/bookings/", response_model=BookingResponse)
-async def book_ticket(booking: Booking):
+async def book_ticket(booking: Ticket):
     # 1. Tìm phim trong collection movies theo movie_id
     movie_ref = db.collection('movies').document(booking.movie_id)
     movie = movie_ref.get()
@@ -273,7 +277,7 @@ async def book_ticket(booking: Booking):
     return BookingResponse(ticket_ids=ticket_ids, total_price=total_price)
 
 # 7. Xem danh sách vé đã đặt của khách hàng
-@app.get("/bookings/{user_id}", response_model=List[Booking])
+@app.get("/bookings/{user_id}", response_model=List[Ticket])
 async def get_user_bookings(user_id: str):
     bookings_ref = db.collection('users').where('user_id', '==', user_id)
     bookings = bookings_ref.stream()
@@ -311,6 +315,124 @@ async def cancel_page():
 @app.get("/favicon.ico")
 async def favicon():
     return HTMLResponse(content="", status_code=200)
+
+
+# 10. API Tạo Người Dùng
+@app.post("/users", response_model=str)
+async def create_user(user: User):
+    """
+    Tạo người dùng mới sau khi kiểm tra email không trùng lặp.
+    """
+    # Kiểm tra email đã tồn tại
+    users_ref = db.collection('users')
+    user_query = users_ref.where('email', '==', user.email).stream()
+
+    if any(user_query):  # Nếu email đã tồn tại
+        raise HTTPException(status_code=400, detail="Email đã được sử dụng!")
+
+    # Nếu email chưa tồn tại, tạo người dùng mới
+    user_ref = db.collection('users').document()
+    user_ref.set(user.dict())
+    return user_ref.id
+
+# 11. API Xem Chi Tiết Người Dùng
+@app.get("/users/{user_id}", response_model=Dict)
+async def get_user(user_id: str):
+    user_ref = db.collection('users').document(user_id)
+    user = user_ref.get()
+    if not user.exists:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user.to_dict()
+
+# 12. API Xem Vé Của Người Dùng
+@app.get("/tickets/{user_id}", response_model=List[Dict])
+async def get_user_tickets(user_id: str):
+    """
+    API để xem thông tin các vé của người dùng.
+    Lấy dữ liệu từ collection `tickets` và trả về danh sách vé.
+    """
+    bookings_ref = db.collection('tickets').where('user_id', '==', user_id).stream()
+
+    tickets = []
+    for booking in bookings_ref:
+        booking_data = booking.to_dict()
+        
+        # Tách từng vé từ thông tin booking
+        for seat in booking_data["seats"]:
+            ticket = {
+                "user_id": booking_data["user_id"],
+                "movie_title": booking_data["movie_title"],
+                "cinema_name": booking_data["cinema_name"],
+                "showtime": booking_data["showtime"],
+                "seat_number": seat,
+                "total_price": booking_data["total_price"],  # Có thể chia đều theo số ghế nếu cần
+                "created_at": booking_data.get("created_at")
+            }
+            tickets.append(ticket)
+
+    return tickets
+
+# Model cho Login
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class LoginResponse(BaseModel):
+    user_id: str
+    name: str
+    email: str
+    is_admin: bool
+
+# 13. API Đăng Nhập
+@app.post("/users/login", response_model=LoginResponse)
+async def login_user(credentials: LoginRequest):
+    """
+    API đăng nhập cho người dùng.
+    Xác thực email và mật khẩu, trả về thông tin người dùng nếu đăng nhập thành công.
+    """
+    # Truy vấn người dùng từ Firestore dựa trên email
+    users_ref = db.collection('users')
+    user_query = users_ref.where('email', '==', credentials.email).stream()
+
+    user = next(user_query, None)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_data = user.to_dict()
+
+    # Kiểm tra mật khẩu
+    if user_data['password'] != credentials.password:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # Trả về thông tin người dùng
+    return LoginResponse(
+        user_id=user.id,
+        name=user_data['name'],
+        email=user_data['email'],       
+        is_admin=user_data['is_admin']
+    )
+
+# 14. API Cập Nhật Thông Tin Người Dùng
+@app.put("/users/{user_id}", response_model=Dict)
+async def update_user_info(user_id: str, updates: Dict):
+    """
+    API để người dùng cập nhật thông tin cá nhân của mình.
+    """
+    user_ref = db.collection('users').document(user_id)
+    user = user_ref.get()
+
+    if not user.exists:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Loại bỏ các trường không được phép chỉnh sửa
+    restricted_fields = ["email", "password", "is_admin"]
+    updates = {key: value for key, value in updates.items() if key not in restricted_fields}
+
+    # Cập nhật thông tin
+    user_ref.update(updates)
+
+    return {"message": f"User {user_id} updated successfully", "updated_fields": updates}
 
 if __name__ == "__main__":
     import uvicorn
