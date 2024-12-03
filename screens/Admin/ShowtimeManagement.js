@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,82 +8,93 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import { cinemas } from './data'
+import { format } from "date-fns";
+import axios from 'axios';
 import { API_URL } from '@env';
+import { useFocusEffect } from '@react-navigation/native';
 
 const ShowtimeManagementScreen = ({ route, navigation }) => {
-  const { movie } = route.params; // Nhận dữ liệu phim từ navigation
-  const [showtimes, setShowtimes] = useState(movie.showtimes);
-  
+  const { movie, movie_id } = route.params; // Nhận dữ liệu phim từ navigation
+  const [cinemas, setCinemas] = useState([]);
+  const [showtimes, setShowtimes] = useState();
+  const [refresh, setRefresh] = useState(false);
+
+  const fetchCinema = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/cinemas`);
+      setCinemas(response.data);
+    } catch (error) {
+      console.error("Failed to fetch cinema:", error);
+    }
+  };
+
+  const fetchShowtimes = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/movies/${movie_id}/showtimes`);
+      setShowtimes(response.data);
+    } catch (error) {
+      console.error("Failed to fetch Showtimes:", error);
+    }
+  };
+
   useEffect(() => {
+    fetchShowtimes();
     navigation.setOptions({
       title: `Suất chiếu của ${movie.title}`,
     });
-  }, [movie.title, navigation]);
-  // Hàm xóa showtime
-  const handleDeleteShowtime = (id) => {
-    Alert.alert("Xác nhận", "Bạn có chắc chắn muốn xóa showtime này?", [
+  }, [movie.title, navigation, refresh]);
+  
+  useFocusEffect(
+    useCallback(() => {
+      fetchShowtimes(); // Cập nhật dữ liệu khi quay lại màn hình
+      fetchCinema();
+    }, [])
+  );
+
+  const handleDelete = (showtime_id) => {
+    Alert.alert("Xác nhận", "Bạn có chắc chắn muốn xóa suất chiếu này?", [
       { text: "Hủy", style: "cancel" },
       {
         text: "Xóa",
         onPress: () => {
-          const updatedShowtimes = { ...showtimes };
-          delete updatedShowtimes[id];
-          setShowtimes(updatedShowtimes);
+          axios.delete(`${API_URL}/movies/${movie_id}/showtimes/${showtime_id}`)
+          .then(() => {
+            setRefresh(!refresh);
+            alert('Xóa suất chiếu thành công!');
+          })
+          .catch(error => {
+            console.error(error);
+          });
         },
       },
     ]);
   };
 
-  // Hàm chỉnh sửa showtime
-  const onUpdateShowtime = (updatedShowtime) => {
-    setShowtimes((prevShowtimes) =>
-      prevShowtimes.map((showtime) =>
-        showtime.start_time === updatedShowtime.start_time &&
-        showtime.cinema.cinema_name === updatedShowtime.cinema.cinema_name &&
-        showtime.cinema.hall_name === updatedShowtime.cinema.hall_name
-          ? updatedShowtime // Thay thế showtime được chỉnh sửa
-          : showtime
-      )
-    );
-    Alert.alert("Thông báo", "Cập nhật suất chiếu thành công!");
-  };
-
-  const navigateToEditScreen = (showtime) => {
-    navigation.navigate("EditShowtimeScreen", {
-      showtime,
-      cinemas,
-      onUpdateShowtime,
-    });
-  };
-
   return (
     <View style={styles.container}>
       <FlatList
-        data={Object.entries(showtimes)}
-        keyExtractor={(item) => item[0]}
+        data={showtimes}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
-          const [id, showtime] = item;
           return (
             <View style={styles.showtimeItem}>
               <Text style={styles.showtimeText}>
-                🕒 {new Date(showtime.start_time).toLocaleString()} -{" "}
-                {new Date(showtime.end_time).toLocaleString()}
+                🕒 {format(item.start_time, "dd/MM/yyyy, HH:mm:ss")} -{" "}
+                {format(item.end_time, "dd/MM/yyyy, HH:mm:ss")}
               </Text>
               <Text style={styles.showtimeText}>
-                🎥 {showtime.cinema.cinema_name} - {showtime.cinema.hall_name}
+                🎥 {item.cinema_name} - {item.hall_name}
               </Text>
               <View style={styles.buttonRow}>
                 <TouchableOpacity
                   style={styles.editButton}
-                  // onPress={() => navigation.navigate('EditShowtimeScreen', { showtime: item })}
-                  onPress={() => navigateToEditScreen(showtime)}
+                  onPress={() => navigation.navigate('EditShowtimeScreen', { showtime_id: item.id, showtime: item, showtimes: showtimes, cinemas: cinemas, movie_id: movie.id, duration: movie.duration })}
                 >
                   <Text style={styles.buttonText}>Chỉnh sửa</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.deleteButton}
-                  onPress={() => handleDeleteShowtime(id)}
+                  onPress={() => handleDelete(item.id)}
                 >
                   <Text style={styles.buttonText}>Xóa</Text>
                 </TouchableOpacity>
@@ -96,14 +107,7 @@ const ShowtimeManagementScreen = ({ route, navigation }) => {
       <TouchableOpacity 
         style={styles.addButton} 
         onPress={() => navigation.navigate("AddShowtimeScreen", {
-          cinemas,
-          onAddShowtime: (newShowtime) => {
-            const newId = `showtime_${Date.now()}`;
-            setShowtimes((prev) => ({
-              ...prev,
-              [newId]: newShowtime,
-            }));
-          },
+          duration: movie.duration, movie_id: movie.id, showtimes: showtimes, cinemas: cinemas
         })}
       >
         <Text style={styles.buttonText}>Thêm suất chiếu mới</Text>

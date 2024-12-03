@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,71 +12,90 @@ import { format } from "date-fns";
 import DateTimePicker from 'react-native-ui-datepicker';
 import { Picker } from "@react-native-picker/picker";
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { API_URL } from '@env';
 import { LogBox } from 'react-native';
+import axios from "axios";
 
 LogBox.ignoreLogs([
   'Non-serializable values were found in the navigation state',
 ]);
 
 const AddShowtimeScreen = ({ navigation, route }) => {
-  const { cinemas, onAddShowtime } = route.params;
-
-  const [selectedCinema, setSelectedCinema] = useState("");
-  const [selectedHall, setSelectedHall] = useState("");
-  const [startTime, setStartTime] = useState(new Date());
-  const [endTime, setEndTime] = useState(
-    new Date(new Date().getTime() + 2 * 60 * 60 * 1000)
+  const { movie_id, duration, showtimes, cinemas } = route.params;
+  const [start_time, setStartTime] = useState(new Date());
+  const [end_time, setEndTime] = useState(
+    new Date(new Date().getTime() + duration * 60 * 1000)
   );
+  const [hall_name, setHallName] = useState("");
+  const [cinema_name, setCinemaName] = useState("");
   const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
 
-  const onStartTimeChange = useCallback(
-    (params) => {
-      setShowStartPicker(false);
-      setStartTime(params.date);
-    },
-  );
+  const onStartTimeChange = (params) => {
+    const startDay = new Date(params.date);
+    setStartTime(startDay.toISOString());
+    setEndTime(new Date(startDay.setMinutes(startDay.getMinutes() + duration)));
+  };
 
-  const onEndTimeChange = useCallback(
-    (params) => {
-      setShowEndPicker(false);
-      setEndTime(params.date);
-    },
-  );
+  function generateSeats() {
+    const rows = 8; // Số hàng ghế (A, B, ..., H)
+    const seatsPerRow = 10; // Số ghế mỗi hàng
+    const newSeats = [];
+  
+    for (let row = 0; row < rows; row++) {
+      const rowLetter = String.fromCharCode(65 + row); // Chuyển số thành chữ cái (A, B, C,...)
+      for (let seatNumber = 1; seatNumber <= seatsPerRow; seatNumber++) {
+        const isVip = row >= 5 && row <= 7 && seatNumber <= 10; // F, G, H và ghế từ 1 đến 8 là vip
+        newSeats.push({
+          seat: `${rowLetter}${seatNumber}`, // Ví dụ: A1, A2,...
+          available: true, // Mặc định ghế trống
+          type: isVip ? "vip" : "normal", // Phân loại ghế
+        });
+      }
+    }
+  
+    return newSeats;
+  }
 
-  // Hàm xử lý khi nhấn thêm
   const handleAdd = () => {
-    if (!selectedCinema || !selectedHall) {
+    if (!cinema_name || !hall_name) {
       Alert.alert("Lỗi", "Vui lòng chọn rạp phim và phòng chiếu.");
       return;
     }
 
-    if (new Date(startTime).toISOString() >= new Date(endTime).toISOString()) {
+    if (new Date(start_time).toISOString() < new Date().toISOString()){
+      Alert.alert("Lỗi", "Thời gian bắt đầu và thời gian kết thúc phải sau thời điểm hiện tại.");
+      return;
+    }
+
+    if (new Date(start_time).toISOString() >= new Date(end_time).toISOString()) {
       Alert.alert("Lỗi", "Thời gian bắt đầu phải trước thời gian kết thúc.");
       return;
     }
 
-    const hallDetails = cinemas[selectedCinema].halls[selectedHall];
+    for (let i = 0; i < showtimes.length; i++) {
+      if ((new Date(start_time).toISOString() >= new Date(showtimes[i].start_time).toISOString()) && (new Date(start_time).toISOString() <= new Date(showtimes[i].end_time).toISOString()) && (cinemas[cinema_name].name === showtimes[i].cinema_name) && (cinemas[cinema_name].halls[hall_name].name === showtimes[i].hall_name)) {
+        Alert.alert("Lỗi", "Suất chiếu bị trùng với suất chiếu đã tồn tại!");
+        return;
+      }
+    }
 
-    // Tạo showtime mới
-    const newShowtime = {
-      start_time: startTime,
-      end_time: endTime,
-      cinema: {
-        cinema_name: cinemas[selectedCinema].name,
-        location: cinemas[selectedCinema].location,
-        hall_name: hallDetails.name,
-        seat_capacity: hallDetails.seat_capacity,
-      },
-      seats: [
-        { seat: "A1", available: true, type: "normal" },
-        { seat: "A2", available: true, type: "vip" },
-      ],
-    };
-
-    // Truyền về màn hình trước
-    onAddShowtime(newShowtime);
-    navigation.goBack();
+    axios.post(`${API_URL}/movies/${movie_id}/showtimes`, {
+      start_time,
+      end_time,
+      cinema_name: cinemas[cinema_name].name,
+      hall_name: cinemas[cinema_name].halls[hall_name].name,
+      location: cinemas[cinema_name].location,
+      seats: generateSeats()
+    })
+    .then(() => {
+      alert('Suất chiếu đã được thêm thành công!');
+      navigation.goBack();
+    })
+    .catch(error => {
+      if (error.response && error.response.status === 400) {
+        Alert.alert("Error", "Suất chiếu bị trùng với suất chiếu đã tồn tại!");
+      }
+    });
   };
 
   return (
@@ -84,10 +103,10 @@ const AddShowtimeScreen = ({ navigation, route }) => {
       {/* Chọn rạp */}
       <Text style={styles.label}>Chọn Rạp Phim</Text>
       <Picker
-        selectedValue={selectedCinema}
+        selectedValue={cinema_name}
         onValueChange={(itemValue) => {
-          setSelectedCinema(itemValue);
-          setSelectedHall(""); // Reset phòng chiếu khi thay đổi rạp
+          setCinemaName(itemValue);
+          setHallName(""); // Reset phòng chiếu khi thay đổi rạp
         }}
         style={styles.picker}
         itemStyle={{
@@ -106,12 +125,12 @@ const AddShowtimeScreen = ({ navigation, route }) => {
       </Picker>
 
       {/* Chọn phòng chiếu */}
-      {selectedCinema ? (
+      {cinema_name ? (
         <>
           <Text style={styles.label}>Chọn Phòng Chiếu</Text>
           <Picker
-            selectedValue={selectedHall}
-            onValueChange={(itemValue) => setSelectedHall(itemValue)}
+            selectedValue={hall_name}
+            onValueChange={(itemValue) => setHallName(itemValue)}
             style={styles.picker}
             itemStyle={{
               fontSize: 18,
@@ -119,7 +138,7 @@ const AddShowtimeScreen = ({ navigation, route }) => {
             }}
           >
             <Picker.Item label="Chọn phòng chiếu" value="" />
-            {Object.entries(cinemas[selectedCinema].halls).map(
+            {Object.entries(cinemas[cinema_name].halls).map(
               ([hallId, hall]) => (
                 <Picker.Item key={hallId} label={hall.name} value={hallId} />
               )
@@ -133,19 +152,19 @@ const AddShowtimeScreen = ({ navigation, route }) => {
         <Text style={styles.label}>Giờ Bắt Đầu</Text>
         <TextInput
           style={styles.input}
-          value={format(startTime, "dd/MM/yyyy, H:mm:ss")}
+          value={format(start_time, "dd/MM/yyyy, H:mm:ss")}
           editable={false}
         />
         <Ionicons
           name="calendar-outline"
           size={20}
-          onPress={() => setShowStartPicker(true)}
+          onPress={() => setShowStartPicker(!showStartPicker)}
           style={{ color: 'red', position: 'absolute', top: 45, right: 15 }}
         />
         {showStartPicker && (
           <ScrollView horizontal={true} style={{display: 'flex', flexDirection: 'column'}}>
             <DateTimePicker
-              date={startTime}
+              date={start_time}
               timePicker
               mode="single"
               monthContainerStyle={{backgroundColor: '#575958'}}
@@ -169,35 +188,9 @@ const AddShowtimeScreen = ({ navigation, route }) => {
         <Text style={styles.label}>Giờ Kết Thúc</Text>
         <TextInput
           style={styles.input}
-          value={format(endTime, "dd/MM/yyyy, H:mm:ss")}
+          value={format(end_time, "dd/MM/yyyy, H:mm:ss")}
           editable={false}
         />
-        <Ionicons
-          name="calendar-outline"
-          size={20}
-          onPress={() => setShowEndPicker(true)}
-          style={{ color: 'red', position: 'absolute', top: 45, right: 15 }}
-        />
-        {showEndPicker && (
-          <ScrollView horizontal={true} style={{display: 'flex', flexDirection: 'column'}}>
-            <DateTimePicker
-              date={endTime}
-              timePicker
-              mode="single"
-              monthContainerStyle={{backgroundColor: '#575958'}}
-              yearContainerStyle={{backgroundColor: '#575958'}}
-              calendarTextStyle={{color: '#fff'}}
-              headerTextStyle={{color: '#fff'}}
-              weekDaysTextStyle={{color: '#fff'}}
-              headerButtonColor='#fff'
-              selectedItemColor='#ff0000'
-              timePickerTextStyle={{color: '#fff'}}
-              timePickerIndicatorStyle={{backgroundColor: '#ff0000'}}
-              dayContainerStyle={{backgroundColor: '#575958'}}
-              onChange={onEndTimeChange}
-            />
-          </ScrollView>
-        )}
       </View>
 
       {/* Nút thêm */}

@@ -2,8 +2,8 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, Button, FlatList, StyleSheet, Image, Alert, Touchable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
-import axios from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
+import axios from 'axios';
 import { API_URL } from '@env';
 
 export default function MoviesManagement() {
@@ -40,15 +40,14 @@ export default function MoviesManagement() {
       {
         text: "Xóa",
         onPress: () => {
-          axios.delete(`${API_URL}/movies/${movie_id}`, {
-          })
+          axios.delete(`${API_URL}/movies/${movie_id}`)
           .then(() => {
+            setRefresh(!refresh);
             alert('Xóa phim thành công!');
           })
           .catch(error => {
             console.error(error);
           });
-          setRefresh(!refresh);
         },
       },
     ]);

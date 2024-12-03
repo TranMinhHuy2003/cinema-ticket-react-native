@@ -17,6 +17,9 @@ import MoviesShowtime from './MoviesShowtime'
 import ShowtimeManagement from './ShowtimeManagement'
 import AddShowtimeScreen from './AddShowtimeScreen';
 import EditShowtimeScreen from './EditShowtimeScreen';
+import CinemaManagementScreen from './CinemaManagement';
+import AddCinema from './AddCinema';
+import EditCinema from './EditCinema';
 // import TicketsManagement from './TicketsManagement';
 // import SeatsManagement from './SeatsManagement';
 
@@ -41,6 +44,10 @@ function getHiddenDrawer(route) {
     case 'AddShowtimeScreen':
       return false;
     case 'EditShowtimeScreen':
+      return false;
+    case 'AddCinema':
+      return false;
+    case 'EditCinema':
       return false;
   }
 }
@@ -229,6 +236,67 @@ function AdminShowtime() {
   );
 }
 
+function AdminCinema() {
+  return (
+    <Stack.Navigator initialRouteName="CinemaManagement">
+      <Stack.Screen 
+        name="CinemaManagement" 
+        component={CinemaManagementScreen} 
+        options={{ 
+          title: 'Quản lý rạp chiếu', 
+          headerShown: false
+        }} 
+      />
+      <Stack.Screen 
+        name="AddCinema" 
+        component={AddCinema} 
+        options={({ navigation }) => ({
+          title: 'Thêm rạp chiếu',
+          headerLeft: () => (
+            <Icon
+              name="arrow-back-outline"
+              size={30}
+              onPress={() => navigation.goBack()}
+              style={{ marginLeft: 15, color: '#ff0000' }}
+            />
+          ),
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#1e1e1e',
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold'
+          }
+        })}
+      />
+      <Stack.Screen 
+        name="EditCinema" 
+        component={EditCinema} 
+        options={({ navigation }) => ({
+          title: 'Sửa rạp chiếu',
+          headerLeft: () => (
+            <Icon
+              name="arrow-back-outline"
+              size={30}
+              onPress={() => navigation.goBack()}
+              style={{ marginLeft: 15, color: '#ff0000' }}
+            />
+          ),
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#1e1e1e',
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold'
+          }
+        })}
+      />
+    </Stack.Navigator>
+  );
+}
+
 // Drawer Navigator cho Admin
 export default function Admin() {
   const { setIsAuthenticated, setUserRole } = useContext(AuthContext);
@@ -239,30 +307,31 @@ export default function Admin() {
   };
 
   return (
-      <Drawer.Navigator
-        initialRouteName="Dashboard"
-        screenOptions={({ route }) => ({
-          headerStyle: {
-            backgroundColor: '#1e1e1e',
-          },
-          headerTitleStyle: {
-            fontWeight: 'bold',
-            color: '#fff'
-          },
-          drawerStyle: {
-            backgroundColor: '#1e1e1e',
-          },
-          drawerActiveTintColor: '#ff0000',
-          drawerInactiveTintColor: '#fff',
-          headerTintColor: '#ff0000',
-          headerShown: getHiddenDrawer(route)
-        })}
-      >
-        <Drawer.Screen name="Bảng điều khiển" component={Dashboard} />
-        <Drawer.Screen name="Quản lý phim" component={AdminMovie} />
-        <Drawer.Screen name="Quản lý vé" component={AdminTicket} />
-        <Drawer.Screen name="Quản lý suất chiếu" component={AdminShowtime} />
-        {/* <Drawer.Screen name="Seats Management" component={SeatsManagement} /> */}
-      </Drawer.Navigator>
+    <Drawer.Navigator
+      initialRouteName="Dashboard"
+      screenOptions={({ route }) => ({
+        headerStyle: {
+          backgroundColor: '#1e1e1e',
+        },
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          color: '#fff'
+        },
+        drawerStyle: {
+          backgroundColor: '#1e1e1e',
+        },
+        drawerActiveTintColor: '#ff0000',
+        drawerInactiveTintColor: '#fff',
+        headerTintColor: '#ff0000',
+        headerShown: getHiddenDrawer(route)
+      })}
+    >
+      <Drawer.Screen name="Bảng điều khiển" component={Dashboard} />
+      <Drawer.Screen name="Quản lý phim" component={AdminMovie} />
+      <Drawer.Screen name="Quản lý vé" component={AdminTicket} />
+      <Drawer.Screen name="Quản lý suất chiếu" component={AdminShowtime} />
+      <Drawer.Screen name="Quản lý rạp chiếu" component={AdminCinema} />
+      {/* <Drawer.Screen name="Seats Management" component={SeatsManagement} /> */}
+    </Drawer.Navigator>
   );
 };
