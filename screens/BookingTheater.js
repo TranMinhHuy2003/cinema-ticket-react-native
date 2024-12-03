@@ -3,6 +3,12 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, } from 
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import { API_URL } from '@env';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Hàm tạo các ngày trong tuần từ thứ Hai đến Chủ Nhật
 const generateWeekDays = (startDate) => {
@@ -40,14 +46,36 @@ const Booking = ({ route, navigation }) => {
     newDate.setDate(newDate.getDate() + 7); // Thêm 7 ngày
     setCurrentWeek(generateWeekDays(newDate)); // Tạo tuần mới từ ngày mới
     setSelectedDate(newDate); // Cập nhật ngày được chọn là thứ Hai tuần mới
+
+    // Cập nhật lại tháng và năm
+    setCurrentMonth(newDate.getMonth() + 1);
+    setCurrentYear(newDate.getFullYear());
   };
 
   // Quay lại tuần trước
   const goToPreviousWeek = () => {
-    const newDate = new Date(currentWeek[0]); // Lấy ngày thứ Hai hiện tại
-    newDate.setDate(newDate.getDate() - 7); // Trừ 7 ngày
-    setCurrentWeek(generateWeekDays(newDate)); // Tạo tuần mới từ ngày mới
-    setSelectedDate(newDate); // Cập nhật ngày được chọn là thứ Hai tuần trước
+    const today = new Date();
+    const currentMonday = generateWeekDays(today)[0]; // Ngày thứ Hai của tuần hiện tại
+    const newDate = new Date(currentWeek[0]); // Lấy ngày thứ Hai của tuần hiện tại trong state
+    newDate.setDate(newDate.getDate() - 7); // Trừ 7 ngày để quay về tuần trước
+
+    // Cho phép quay về tuần hiện tại nhưng không cho quay về tuần trước đó
+    if (newDate >= currentMonday) {
+      setCurrentWeek(generateWeekDays(newDate)); // Tạo tuần mới từ ngày mới
+      setSelectedDate(newDate); // Cập nhật ngày được chọn
+
+      // Cập nhật lại tháng và năm
+      setCurrentMonth(newDate.getMonth() + 1);
+      setCurrentYear(newDate.getFullYear());
+    } else {
+      // Nếu quay về tuần trước là tuần hiện tại, đặt tuần hiện tại và chọn ngày hôm nay trong tuần hiện tại
+      setCurrentWeek(generateWeekDays(today));
+      setSelectedDate(today); // Chọn ngày hôm nay của tuần hiện tại
+
+      // Cập nhật lại tháng và năm
+      setCurrentMonth(today.getMonth() + 1);
+      setCurrentYear(today.getFullYear());
+    }
   };
 
   // Định dạng dữ liệu phim
@@ -58,27 +86,28 @@ const Booking = ({ route, navigation }) => {
     }
 
     const formattedShowtimes = Object.entries(data.showtimes).map(([id, showtime]) => {
-      const startTime = new Date(showtime.start_time);
-
-      const localDate = new Date(startTime.getTime() - startTime.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      const startTime = dayjs.utc(showtime.start_time).tz('Asia/Bangkok').add(7, 'hour');;
   
       // Kiểm tra xem startTime có hợp lệ không
       if (isNaN(startTime)) {
         console.error(`Invalid start_time value for showtime ${id}:`, showtime.start_time);
         return null; // Hoặc có thể tiếp tục với giá trị mặc định nếu cần
       }
+
+      // Logic for 12-hour format with AM/PM
+      const hours = startTime.hour();
+      const formattedTime = startTime.format('hh:mm A'); // 12-hour format without AM/PM
+
+      // If it's midnight, keep it as "00:44 AM"
+      const finalTime = (hours === 0 ? `00:${startTime.minute()} AM` : formattedTime);
   
       return {
         id,
-        date: localDate,
-        cinemaName: showtime.cinema.cinema_name,
-        hallName: showtime.cinema.hall_name,
+        date: startTime.format('YYYY-MM-DD'),
+        cinemaName: showtime.cinema_name,
+        hallName: showtime.hall_name,
         startTimeOriginal: showtime.start_time,
-        startTime: startTime.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-        }),
+        startTime: finalTime,
       };
     }).filter(showtime => showtime !== null); // Lọc bỏ các showtime bị lỗi  
 
@@ -126,12 +155,39 @@ const Booking = ({ route, navigation }) => {
 
   // Chọn ngày
   const handleDateSelect = (date) => {
+    const today = new Date(); // Lấy ngày hôm nay
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()); // Đặt thời gian về đầu ngày
+    const selectedDateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate()); // Đặt thời gian về đầu ngày
+  
+    // Kiểm tra nếu ngày được chọn là quá khứ thì không thực hiện gì
+    if (selectedDateStart < todayStart) {
+      return; // Không làm gì cả
+    }
+  
+    // Ngày hợp lệ -> Cập nhật trạng thái
     setSelectedDate(date);
     setCurrentMonth(date.getMonth() + 1); // Lấy số tháng và thêm 1
     setCurrentYear(date.getFullYear());
     setExpandedTheater(null);
     setSelectedShowtime(null);
-  };
+  };  
+  
+  const filteredWeekDays = currentWeek.map((date) => {
+    const today = new Date();
+  
+    // Đặt thời gian của cả 'date' và 'today' về đầu ngày (00:00:00)
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+    return {
+      date,
+      isPast: dateStart < todayStart, // Đánh dấu các ngày quá khứ
+    };
+  });    
+  
+  const today = new Date();
+  const currentMonday = generateWeekDays(today)[0]; // Ngày thứ Hai của tuần hiện tại
+  const isCurrentWeek = currentWeek[0].toDateString() === currentMonday.toDateString();
 
   // Chọn rạp
   const handleTheaterSelect = (cinemaName) => {
@@ -163,13 +219,19 @@ const Booking = ({ route, navigation }) => {
           <Text style={styles.monthText}>Tháng {currentMonth}, {currentYear}</Text>
         </View>
         <View style={styles.dateSelector}>
-          <TouchableOpacity onPress={goToPreviousWeek}>
-            <MaterialIcons name="keyboard-arrow-left" size={24} color="#FFD700" />
-          </TouchableOpacity>
-          {currentWeek.map((date, index) => (
+          {!isCurrentWeek && ( // Chỉ hiển thị mũi tên nếu không ở tuần hiện tại
+            <TouchableOpacity onPress={goToPreviousWeek}>
+              <MaterialIcons name="keyboard-arrow-left" size={24} color="#FFD700" />
+            </TouchableOpacity>
+          )}
+          {filteredWeekDays.map(({ date, isPast }, index) => (
             <TouchableOpacity
               key={index}
-              onPress={() => handleDateSelect(date)}
+              onPress={() => {
+                if (!isPast) {
+                  handleDateSelect(date); // Chỉ thực hiện khi không phải ngày quá khứ
+                }
+              }}
               style={styles.dateItem}
             >
               <Text

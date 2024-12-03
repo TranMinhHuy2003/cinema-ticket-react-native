@@ -30,8 +30,8 @@ const BookingSeats = ({ route, navigation }) => {
 
             // So sánh ngày và thời gian
             const dateMatch = startDate === selectedDateFormatted;
-            const theaterMatch = showtime.cinema.cinema_name === selectedTheater;
-            const hallMatch = showtime.cinema.hall_name === selectedHall;
+            const theaterMatch = showtime.cinema_name === selectedTheater;
+            const hallMatch = showtime.hall_name === selectedHall;
 
             return dateMatch && theaterMatch && hallMatch;
           });
