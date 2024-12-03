@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Button, FlatList, StyleSheet, Image, Touchable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
+import { API_URL } from '@env';
 import axios from 'axios';
 import { API_URL } from '@env';
 
@@ -10,7 +11,7 @@ export default function MoviesShowtime() {
 
   const fetchMovies = async () => {
     try {
-      const response = await axios.get(`${API_URL}/movies`);
+      const response = await axios.get(`${ API_URL }/movies`);
       setMovies(response.data);
     } catch (error) {
       console.error('Failed to fetch movies:', error);
@@ -32,7 +33,7 @@ export default function MoviesShowtime() {
         renderItem={({ item }) => (
           <TouchableOpacity 
             style={styles.listItem} 
-            onPress={() => navigation.navigate('ShowtimeManagement', { movie: item })}
+            onPress={() => navigation.navigate('ShowtimeManagement', { movie: item, movie_id: item.id })}
           >
             <View>
               <Image

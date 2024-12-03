@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from firebase_admin import firestore
 import firebase_admin
@@ -45,7 +45,19 @@ app.add_middleware(
     allow_headers=["*"],  # Cho phép tất cả các tiêu đề
 )
 
-# Models cho phim và booking
+class Seat(BaseModel):
+  seat: str = ""
+  available: bool = True
+  type: str = ""
+
+class Showtime(BaseModel):
+  start_time: datetime = "1999-03-30T17:00:00.610000Z"
+  end_time: datetime = "1999-03-30T17:00:00.610000Z"
+  cinema_name: str = ""
+  location: str = ""
+  hall_name: str = ""
+  seats: list[Seat] = Field(..., example=[{"seat": "A1", "available": True, "type": "vip"}])
+
 class Movie(BaseModel):
   title: str = ""
   description: str = ""
@@ -56,13 +68,16 @@ class Movie(BaseModel):
   imdbRating: Optional[float] = 1.5
   rottenTomatoesRating: Optional[int] = 1
   releaseDate: datetime = "1999-03-30T17:00:00.610000Z"
-  showtimes: Optional[dict] = {}  # {'timeId': {'time': '2024-09-20T19:00:00', 'seats': {'A1': True, 'A2': False}}}
+  showtimes: Optional[Dict] = []
 
 class Ticket(BaseModel):
   user_id: str = ""
+  movie_id: str = ""
   movie_title: str = ""
   movie_id: str
   cinema_name: str = ""
+  cancel_reason: str = ""
+  hall_name: str = ""
   showtime: datetime = "1999-03-30T17:00:00.610000Z"
   seat_number: str = ""
   status: int = 1
@@ -93,28 +108,36 @@ class PaymentRequest(BaseModel):
     movie_id: str  # ID của bộ phim
     showtime: datetime  # Thời gian chiếu
     selectedSeats: List[str]  # Danh sách ghế đã chọn
+  
+class Hall(BaseModel):
+  name: str = Field(..., example="Room A")
+  seat_capacity: int = Field(..., example=100)
+
+class Cinema(BaseModel):
+  name: str = Field(..., example="Cinema 1")
+  location: str = Field(..., example="123 Main Street")
+  halls: list[Hall] = Field(..., example=[{"name": "Hall A", "seat_capacity": 100}])
 
 # Mock admin authentication function
 def get_current_admin_user():
-    # Giả định là đã đăng nhập và xác thực, trả về user là admin
-    return True  # Thay bằng logic xác thực thực tế
+  # Giả định là đã đăng nhập và xác thực, trả về user là admin
+  return True  # Thay bằng logic xác thực thực tế
 
 # # 1. Lấy danh sách phim
 @app.get("/movies", response_model=List[Dict])
 async def get_movies():
-    """
-    API để lấy danh sách phim cùng với ID.
-    """
-    movies_ref = db.collection('movies')
-    movies = movies_ref.stream()
-    movie_list = []
+  """
+  API để lấy danh sách phim cùng với ID.
+  """
+  movies_ref = db.collection('movies')
+  movies = movies_ref.stream()
+  movie_list = []
 
-    for movie in movies:
-        movie_data = movie.to_dict()  # Dữ liệu của phim
-        movie_data["id"] = movie.id  # Lấy ID của tài liệu
-        movie_list.append(movie_data)
-
-    return movie_list
+  for movie in movies:
+      movie_data = movie.to_dict()  # Dữ liệu của phim
+      movie_data["id"] = movie.id  # Lấy ID của tài liệu
+      movie_list.append(movie_data)
+  return movie_list
 
 
 # 2. Lấy thông tin chi tiết của một phim
@@ -154,70 +177,237 @@ async def get_movie(movie_id: str):
 
 @app.post("/movies/")
 async def add_movie(movie: Movie, admin: bool = Depends(get_current_admin_user)):
-    if not admin:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    movie_ref = db.collection('movies').document()
-    movie_ref.set(movie.dict())
-    return movie_ref.id
+  if not admin:
+      raise HTTPException(status_code=403, detail="Not authorized")
+  movie_ref = db.collection('movies').document()
+  movie_ref.set(movie.dict())
+  return movie_ref.id
 
 # 4. Cập nhật thông tin phim (chỉ admin)
 @app.put("/movies/{movie_id}", response_model=str)
 async def update_movie(movie_id: str, movie: Movie, admin: bool = Depends(get_current_admin_user)):
-    if not admin:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    movie_ref = db.collection('movies').document(movie_id)
-    if not movie_ref.get().exists:
-        raise HTTPException(status_code=404, detail="Movie not found")
-    movie_ref.update(movie.dict())
-    return movie_id
+  if not admin:
+      raise HTTPException(status_code=403, detail="Not authorized")
+  movie_ref = db.collection('movies').document(movie_id)
+  if not movie_ref.get().exists:
+      raise HTTPException(status_code=404, detail="Movie not found")
+  movie_ref.update(movie.dict())
+  return movie_id
 
 # 5. Xóa phim (chỉ admin)
 @app.delete("/movies/{movie_id}", response_model=str)
 async def delete_movie(movie_id: str, admin: bool = Depends(get_current_admin_user)):
-    if not admin:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    movie_ref = db.collection('movies').document(movie_id)
-    if not movie_ref.get().exists:
-        raise HTTPException(status_code=404, detail="Movie not found")
-    movie_ref.delete()
-    return movie_id
+  if not admin:
+      raise HTTPException(status_code=403, detail="Not authorized")
+  movie_ref = db.collection('movies').document(movie_id)
+  if not movie_ref.get().exists:
+      raise HTTPException(status_code=404, detail="Movie not found")
+  showtime_ref = movie_ref.collection('showtimes')
+  showtimes = showtime_ref.stream()
+  for showtime in showtimes:
+      # Xóa từng document trong subcollection 'showtimes'
+      showtime_ref.document(showtime.id).delete()
+  movie_ref.delete()
+  return movie_id
 
 #Get tickets
 @app.get("/tickets", response_model=List[Ticket])
 async def get_tickets():
-    tickets_ref = db.collection('tickets').get()
-    ticket_list = []
+  tickets_ref = db.collection('tickets')
+  tickets = tickets_ref.stream()
+  ticket_list = []
 
-    for ticket in tickets_ref:
-        ticket_data = ticket.to_dict()
-        ticket_data["id"] = ticket.id  
-        ticket_list.append(ticket_data)
+  for ticket in tickets:
+      ticket_data = ticket.to_dict()
+      ticket_data["id"] = ticket.id
+      ticket_list.append(ticket_data)
 
-    return ticket_list
+  return ticket_list
 
 #Delete Ticket
 @app.delete("/tickets/{ticket_id}", response_model=str)
 async def delete_ticket(ticket_id: str, admin: bool = Depends(get_current_admin_user)):
-    if not admin:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    ticket_ref = db.collection('tickets').document(ticket_id)
-    if not ticket_ref.get().exists:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-    ticket_ref.delete()
-    return ticket_id
+  if not admin:
+      raise HTTPException(status_code=403, detail="Not authorized")
+  ticket_ref = db.collection('tickets').document(ticket_id)
+  if not ticket_ref.get().exists:
+      raise HTTPException(status_code=404, detail="Ticket not found")
+  ticket_ref.delete()
+  return ticket_id
 
 #Get users
 @app.get("/users", response_model=List[User])
 async def get_users():
-    users_ref = db.collection('users').get()
-    user_list = []
+  users_ref = db.collection('users').get()
+  user_list = []
 
-    for user in users_ref:
-        user_data = user.to_dict()
-        user_data["id"] = user.id  
-        user_list.append(user_data)
+  for user in users_ref:
+      user_data = user.to_dict()
+      user_data["id"] = user.id  
+      user_list.append(user_data)
 
-    return user_list
+  return user_list
+
+#Get cinemas
+@app.get("/cinemas", response_model=List[Dict])
+async def get_cinema():
+  cinemas_ref = db.collection('cinemas')
+  cinemas = cinemas_ref.stream()
+  cinema_list = []
+
+  for cinema in cinemas:
+      halls_ref = db.collection('cinemas/' + cinema.id + '/halls')
+      halls = halls_ref.stream()
+      hall_list = []
+      for hall in halls:
+          hall_data = hall.to_dict()
+          hall_data["id"] = hall.id
+          hall_list.append(hall_data)
+          
+      cinema_data = cinema.to_dict()
+      cinema_data["halls"] = hall_list
+      
+      cinema_data["id"] = cinema.id
+      cinema_list.append(cinema_data)
+
+  return cinema_list
+
+@app.post("/cinemas/")
+async def add_cinema(cinema: Cinema, admin: bool = Depends(get_current_admin_user)):
+  if not admin:
+      raise HTTPException(status_code=403, detail="Not authorized")
+  cinema_ref = db.collection('cinemas').document()
+  cinema_data = {
+      "name": cinema.name,
+      "location": cinema.location,
+  }
+  cinema_ref.set(cinema_data)
+  batch = db.batch()
+  for hall in cinema.halls:
+      hall_ref = cinema_ref.collection("halls").document()
+      batch.set(hall_ref, hall.dict())
+
+  # Commit the batch operation
+  batch.commit()
+  return cinema_ref.id
+
+@app.put("/cinemas/{cinema_id}", response_model=str)
+async def update_cinema(cinema_id: str, update_data: dict, admin: bool = Depends(get_current_admin_user)):
+  if not admin:
+      raise HTTPException(status_code=403, detail="Not authorized")
+
+  cinema_ref = db.collection('cinemas').document(cinema_id)
+
+  # Kiểm tra xem cinema có tồn tại không
+  if not cinema_ref.get().exists:
+      raise HTTPException(status_code=404, detail="Cinema not found")
+
+  # Cập nhật thông tin của document chính 'cinema'
+  cinema_update_fields = {key: value for key, value in update_data.items() if key != "halls"}
+  if cinema_update_fields:
+      cinema_ref.update(cinema_update_fields)
+
+  # Xử lý các 'halls' trong subcollection
+  halls_data = update_data.get("halls", [])
+  halls_ref = cinema_ref.collection("halls")
+
+  # Lấy danh sách các phòng chiếu hiện tại
+  existing_halls = {hall.id: hall.to_dict() for hall in halls_ref.stream()}
+
+  # Danh sách ID của các phòng chiếu cần giữ lại
+  hall_ids_to_keep = set()
+
+  for hall in halls_data:
+      hall_id = hall.get("id")  # Sử dụng ID để nhận dạng
+      hall_name = hall.get("name")
+      seat_capacity = hall.get("seat_capacity")
+
+      if not hall_name or seat_capacity is None:
+          raise HTTPException(status_code=400, detail="Invalid hall data")
+
+      if hall_id and hall_id in existing_halls:
+          # Nếu ID tồn tại, cập nhật phòng chiếu
+          halls_ref.document(hall_id).update({"name": hall_name, "seat_capacity": seat_capacity})
+      else:
+          # Nếu không có ID, tạo mới phòng chiếu
+          new_hall_ref = halls_ref.document()
+          new_hall_ref.set({"name": hall_name, "seat_capacity": seat_capacity})
+          hall_id = new_hall_ref.id  # Lấy ID mới sau khi tạo
+
+      hall_ids_to_keep.add(hall_id)
+
+  # Xóa các phòng chiếu không nằm trong danh sách cập nhật
+  for hall_id in existing_halls.keys():
+      if hall_id not in hall_ids_to_keep:
+          halls_ref.document(hall_id).delete()
+
+  return cinema_id
+
+
+@app.delete("/cinemas/{cinema_id}", response_model=str)
+async def delete_cinema(cinema_id: str, admin: bool = Depends(get_current_admin_user)):
+  if not admin:
+      raise HTTPException(status_code=403, detail="Not authorized")
+  cinema_ref = db.collection('cinemas').document(cinema_id)
+  if not cinema_ref.get().exists:
+      raise HTTPException(status_code=404, detail="Cinema not found")
+  halls_ref = cinema_ref.collection('halls')
+
+  # Lấy danh sách tất cả các hall trong subcollection
+  halls = halls_ref.stream()
+  for hall in halls:
+      # Xóa từng document trong subcollection 'halls'
+      halls_ref.document(hall.id).delete()
+  cinema_ref.delete()
+  return cinema_id
+
+@app.get("/movies/{movie_id}/showtimes", response_model=List[Dict])
+async def get_showtimes(movie_id: str):
+  showtimes_ref = db.collection('movies').document(movie_id).collection('showtimes')
+  showtimes = showtimes_ref.stream()
+  showtime_list = []
+
+  for showtime in showtimes:
+      showtime_data = showtime.to_dict()
+      
+      showtime_data["id"] = showtime.id
+      showtime_list.append(showtime_data)
+
+  return showtime_list
+
+@app.post("/movies/{movie_id}/showtimes")
+async def add_showtime(movie_id: str, showtime_data: dict, admin: bool = Depends(get_current_admin_user)):
+  if not admin:
+    raise HTTPException(status_code=403, detail="Not authorized")
+  showtime_ref = db.collection('movies').document(movie_id).collection('showtimes')
+
+  new_showtime_ref = showtime_ref.document()  # Tạo ID tự động
+  new_showtime_ref.set(showtime_data)
+  return new_showtime_ref.id
+
+@app.put("/movies/{movie_id}/showtimes/{showtime_id}", response_model=str)
+async def update_showtime(movie_id: str, showtime_id: str, update_data: dict, admin: bool = Depends(get_current_admin_user)):
+  if not admin:
+    raise HTTPException(status_code=403, detail="Not authorized")
+
+  showtime_ref = db.collection('movies').document(movie_id).collection('showtimes').document(showtime_id)
+
+  if not showtime_ref.get().exists:
+      raise HTTPException(status_code=404, detail="Showtime not found")
+
+  showtime_ref.update(update_data)
+
+  return showtime_id
+
+@app.delete("/movies/{movie_id}/showtimes/{showtime_id}", response_model=str)
+async def delete_cinema(movie_id: str, showtime_id: str, admin: bool = Depends(get_current_admin_user)):
+  if not admin:
+      raise HTTPException(status_code=403, detail="Not authorized")
+  showtime_ref = db.collection('movies').document(movie_id).collection('showtimes').document(showtime_id)
+  if not showtime_ref.get().exists:
+      raise HTTPException(status_code=404, detail="Showtime not found")
+  showtime_ref.delete()
+  return showtime_id
 
 def normalize_to_datetime(value):
     if isinstance(value, str):

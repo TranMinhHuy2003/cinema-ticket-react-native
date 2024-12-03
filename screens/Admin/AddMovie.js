@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Alert, View, Text, TextInput, Button, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, FlatList, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {Keyboard} from 'react-native';
-
+import { API_URL } from '@env';
 import axios from 'axios';
 
 const AddMovie = ({ navigation }) => {
@@ -35,7 +35,7 @@ const AddMovie = ({ navigation }) => {
       Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin phim.");
       return;
     }
-    axios.post(`http://192.168.1.3:8000/movies/`, {
+    axios.post(`${API_URL}/movies/`, {
       title,
       description,
       posterUrl,

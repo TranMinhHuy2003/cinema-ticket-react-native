@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Button, Alert, Image } from 'react-native';
 import { format } from 'date-fns';
 import axios from 'axios';
 import { API_URL } from '@env';
+import { API_URL } from '@env';
 
 export default function TicketDetailsScreen ({ route, navigation }) {
   const [users, setUsers] = useState([]);
@@ -55,7 +56,7 @@ export default function TicketDetailsScreen ({ route, navigation }) {
       {
         text: "Xóa",
         onPress: () => {
-          axios.delete(`${API_URL}/tickets/${ticket_id}`, {
+          axios.delete(`${ API_URL }/tickets/${ticket_id}`, {
           })
           .then(() => {
             alert('Xóa vé thành công!');
