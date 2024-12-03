@@ -11,7 +11,6 @@ const { width } = Dimensions.get("window");
 const Payment = ({ route, navigation }) => {
   const { userId } = useContext(AuthContext);
   const { originShowtime, selectedDate, selectedShowtime, selectedTheater, selectedHall, movieId, movieTitle, moviePoster, selectedSeats, totalPrice } = route.params;
-  console.log(originShowtime)
   const [orderId, setOrderId] = useState(null);
   const [checkoutUrl, setCheckoutUrl] = useState(null);
   const description = "Mua vé xem phim";
@@ -53,21 +52,24 @@ const Payment = ({ route, navigation }) => {
     }
   }, []);
 
+  const paymentData = {
+    order_id: orderId,
+    amount: parseInt(totalPrice, 10), // Chuyển amount sang kiểu số
+    // amount: 2000,
+    description: description,
+    movie_id: movieId,
+    showtime: originShowtime,
+    selectedSeats: selectedSeats,
+  };
+
   const handlePayment = async () => {
     if (!orderId) {
       Alert.alert('Error', 'Order ID chưa được tạo');
       return;
     }
 
-    const paymentData = {
-      order_id: orderId,
-      // amount: parseInt(totalPrice, 10), // Chuyển amount sang kiểu số
-      amount: 2000,
-      description: description,
-    };
-
     try {
-      const response = await axios.post(`${API_URL}/payment`, paymentData); // truyền thêm selectedSeats
+      const response = await axios.post(`${API_URL}/payment`, paymentData);
       if (response.data.checkoutUrl) {
         setCheckoutUrl(response.data.checkoutUrl)
       } else {
@@ -105,13 +107,26 @@ const Payment = ({ route, navigation }) => {
               navigation.navigate('MovieList');
             } catch (error) {
               // Mở các ghế đã đặt trong selectedSeats (available: true)
+              try {
+                await axios.post(`${API_URL}/release_seats`, paymentData);
+              } catch (error) {
+                Alert.alert('Error', error.response?.data?.detail || 'Mở ghế thất bại');
+              }
               Alert.alert('Error', error.response?.data?.detail || 'Đặt vé thất bại');
               setCheckoutUrl(null);
+              setOrderId(generateRandomOrderId());
             }
           } else if (navState.url.includes('/cancel')) {
             // Mở các ghế đã đặt trong selectedSeats (available: true)
+            try {
+              await axios.post(`${API_URL}/release_seats`, paymentData);
+            } catch (error) {
+              Alert.alert('Error', error.response?.data?.detail || 'Mở ghế thất bại');
+              setOrderId(generateRandomOrderId());
+            }
             Alert.alert('Cancelled', 'Thanh toán bị hủy');
             setCheckoutUrl(null); // Quay lại màn hình chính
+            setOrderId(generateRandomOrderId());
           }
         }}
       />
