@@ -3,7 +3,7 @@ import { View, Text, Image, StyleSheet, Dimensions, SectionList } from "react-na
 
 const { width } = Dimensions.get("window");
 
-const SalesPromotionDetail = ({ route }) => {
+const SalesPromotionDetail = ({ route, navigation }) => {
   const { promotion } = route.params;
 
   const formatDate = (dateString) => {
@@ -34,17 +34,9 @@ const SalesPromotionDetail = ({ route }) => {
       renderSectionHeader={({ section }) => (
         <Text style={styles.sectionTitle}>{section.title}</Text>
       )}
-      renderItem={({ item, section }) => {
-        if (section.title === "Điều khoản và điều kiện: ") {
-          return (
-            <View style={styles.termItem}>
-              <Text style={styles.termBullet}>- </Text>
-              <Text style={styles.termText}>{item}</Text>
-            </View>
-          );
-        }
-        return <Text style={styles.text}>{item}</Text>;
-      }}
+      renderItem={({ item }) => (
+        <Text style={styles.text}>{item}</Text>
+      )}
       style={styles.container}
     />
   );
@@ -60,6 +52,7 @@ const styles = StyleSheet.create({
   promotionImage: {
     width: width,
     height: width * 0.5,
+    resizeMode: "cover",
   },
   headerContent: {
     padding: 10,
@@ -72,34 +65,20 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: 16,
-    color: "#FFF",
+    color: "#ccc",
     marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#ffcc00",
     marginBottom: 10,
     paddingHorizontal: 10,
   },
   text: {
     fontSize: 16,
-    color: "#FFF",
+    color: "#fff",
     marginBottom: 10,
     paddingHorizontal: 10,
-  },
-  termItem: {
-    flexDirection: "row",
-    paddingHorizontal: 10,
-  },
-  termBullet: {
-    color: "#fff",
-    fontSize: 18,
-    marginRight: 10,
-  },
-  termText: {
-    fontSize: 16,
-    color: "#fff",
-    flex: 1,
   },
 });
