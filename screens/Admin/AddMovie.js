@@ -30,6 +30,11 @@ const AddMovie = ({ navigation }) => {
     setGenres(updatedGenres);
   };
 
+  const handleDateChange = (event, selectedDate) => {
+    const currentDate = selectedDate || releaseDate;
+    setReleaseDate(currentDate)
+  };
+
   const handleSubmit = () => {
     if (!title || !description || !posterUrl || !trailerUrl || !releaseDate || !duration || !genres || !imdbRating || !rottenTomatoesRating) {
       Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin phim.");
@@ -155,11 +160,12 @@ const AddMovie = ({ navigation }) => {
           <DateTimePicker
             value={releaseDate}
             mode="date"
-            format="DD-MM-YYYY"
             style={{marginBottom: 40, marginRight: 231, backgroundColor: '#808080'}}
-            onDateChange={setReleaseDate}
+            onChange={handleDateChange}
           />
-          <Button onPress={handleSubmit} color="#ff0000" title="Thêm" />
+          <TouchableOpacity style={styles.addButton} onPress={handleSubmit}>
+            <Text style={styles.buttonText}>Thêm</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </TouchableWithoutFeedback>
@@ -205,6 +211,18 @@ const styles = StyleSheet.create({
   removeGenre: {
     color: '#ff0000',
     fontWeight: 'bold',
+  },
+  addButton: {
+    backgroundColor: "#ff0000",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 26,
+    marginTop: 16,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
 });
 

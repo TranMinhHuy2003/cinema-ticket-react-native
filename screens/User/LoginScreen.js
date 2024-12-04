@@ -32,7 +32,6 @@ export default function LoginScreen({ navigation }) {
             setUserId(user_id); // Ghi nhận user_id vào AuthContext
 
             Alert.alert('Đăng nhập thành công!', `Chào mừng ${name}`);
-            navigation.navigate(is_admin ? 'Admin' : 'Customer'); // Điều hướng đến màn hình phù hợp
         } catch (error) {
             if (error.response) {
                 if (error.response.status === 404) {

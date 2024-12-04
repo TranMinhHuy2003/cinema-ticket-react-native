@@ -5,18 +5,34 @@ import { TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { API_URL } from '@env';
+import { SearchBar } from '@rneui/themed';
 
 export default function MoviesManagement() {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refresh, setRefresh] = useState(false);
+  const [filteredMovies, setFilteredMovies] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query) {
+      const filtered = movies.filter((movie) =>
+        movie.title.toLowerCase().includes(query.toLowerCase()) ||
+        movie.description.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredMovies(filtered);
+    } else {
+      setFilteredMovies(movies);
+    }
+  };
 
   const fetchMovies = async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/movies`);
       setMovies(response.data);
-      console.log(response.data[0].id);
+      setFilteredMovies(response.data);
     } catch (error) {
       console.error('Failed to fetch movies:', error);
     } finally {
@@ -53,13 +69,23 @@ export default function MoviesManagement() {
     ]);
   };
 
+
   const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
-      <Button onPress={() => navigation.navigate('AddMovie')} color="#ff0000" title="Thêm phim mới" />
+      <SearchBar
+        placeholder="Tìm kiếm phim..."
+        onChangeText={handleSearch}
+        value={searchQuery}
+        containerStyle={styles.searchContainer}
+        inputContainerStyle={styles.searchInput}
+        searchIcon={{color: '#ff0000'}}
+        placeholderTextColor={'#f2f2f2'}
+        inputStyle={{color: '#fff'}}
+      />
       <FlatList
-        data={movies}
+        data={filteredMovies}
         style={{marginTop: 20}}
         keyExtractor={(item, index) => item + index}
         renderItem={({ item }) => (
@@ -87,6 +113,9 @@ export default function MoviesManagement() {
           </TouchableOpacity>
         )}
       />
+      <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddMovie')}>
+        <Text style={styles.buttonText}>Thêm phim mới</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -96,6 +125,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#1e1e1e'
+  },
+  searchContainer: {
+    backgroundColor: "transparent",
+    borderBottomWidth: 0,
+    borderTopWidth: 0,
+  },
+  searchInput: {
+    backgroundColor: "#575958",
   },
   listItem: {
     backgroundColor: '#575958',
@@ -128,5 +165,17 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: 5,
     marginRight: 10,
+  },
+  addButton: {
+    backgroundColor: "#ff0000",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 26,
+    marginTop: 16,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
 });

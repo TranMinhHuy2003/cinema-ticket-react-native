@@ -5,13 +5,14 @@ import {Keyboard} from 'react-native';
 import { API_URL } from '@env';
 import axios from 'axios';
 
-const AddCinema = ({ navigation }) => {
+const AddCinema = ({ route, navigation }) => {
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [halls, setHalls] = useState([]);
   const [hallName, setHallName] = useState("");
   const [seatCapacity, setSeatCapacity] = useState(80);
   const [isFocused, setIsFocused] = useState({});
+  const {cinemas} = route.params;
 
   const addHall = () => {
     if (hallName && seatCapacity) {
@@ -30,6 +31,12 @@ const AddCinema = ({ navigation }) => {
     if (!name || !location || !halls) {
       Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin rạp chiếu.");
       return;
+    }
+    for (let i = 0; i < cinemas.length; i++) {
+      if (name === cinemas[i].name) {
+        Alert.alert("Lỗi", "Tồn tại rạp chiếu trùng tên!");
+        return;
+      }
     }
     axios.post(`${API_URL}/cinemas/`, {
       name,

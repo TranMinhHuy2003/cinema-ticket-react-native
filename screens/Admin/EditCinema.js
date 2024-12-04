@@ -6,7 +6,7 @@ import { API_URL } from '@env';
 import axios from 'axios';
 
 const EditCinema = ({ route, navigation }) => {
-  const { cinema, cinema_id } = route.params;
+  const { cinemas, cinema, cinema_id } = route.params;
   const [name, setName] = useState(cinema.name);
   const [location, setLocation] = useState(cinema.location);
   const [halls, setHalls] = useState(cinema.halls);
@@ -31,6 +31,12 @@ const EditCinema = ({ route, navigation }) => {
     if (!name || !location || !halls) {
       Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin rạp chiếu.");
       return;
+    }
+    for (let i = 0; i < cinemas.length; i++) {
+      if ((name === cinemas[i].name) && (cinema_id != cinemas[i].id)) {
+        Alert.alert("Lỗi", "Tồn tại rạp chiếu trùng tên!");
+        return;
+      }
     }
     axios.put(`${API_URL}/cinemas/${ cinema_id }`, {
       name,

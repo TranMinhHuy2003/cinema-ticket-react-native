@@ -3,16 +3,33 @@ import { View, Text, FlatList, Button, Alert, TouchableOpacity, StyleSheet } fro
 import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { API_URL } from '@env';
+import { SearchBar } from '@rneui/themed';
 
 const TicketsManagement = ({ navigation }) => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [filteredTickets, setFilteredTickets] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query) {
+      const filtered = tickets.filter((ticket) =>
+        ticket.movie_title.toLowerCase().includes(query.toLowerCase()) ||
+        ticket.cinema_name.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredTickets(filtered);
+    } else {
+      setFilteredTickets(tickets);
+    }
+  };
 
   const fetchTickets = async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/tickets`);
       setTickets(response.data);
+      setFilteredTickets(response.data);
     } catch (error) {
       console.error('Failed to fetch tickets:', error);
     } finally {
@@ -25,9 +42,6 @@ const TicketsManagement = ({ navigation }) => {
       fetchTickets(); // Cập nhật dữ liệu khi quay lại màn hình
     }, [])
   );
-  const handlePress = (ticket, ticket_id) => {
-    navigation.navigate('TicketDetail', { ticket, ticket_id });
-  };
 
   const handleStatus = (status) => {
     if (status === 0) {
@@ -37,7 +51,7 @@ const TicketsManagement = ({ navigation }) => {
   };
 
   const renderTicket = ({ item }) => (
-    <TouchableOpacity style={styles.ticketItem} onPress={() => handlePress(item, item.id)}>
+    <TouchableOpacity style={styles.ticketItem} onPress={() => navigation.navigate('TicketDetail', { ticket: item, ticket_id: item.id })}>
       <View>
         <View style={{width: 20, height: 20, backgroundColor: '#1e1e1e', borderRadius: 100, position: "absolute", left: -35, top: -2}}></View>
         <View style={{width: 20, height: 20, backgroundColor: '#1e1e1e', borderRadius: 100, position: "absolute", left: -35, top: 28}}></View>
@@ -55,8 +69,18 @@ const TicketsManagement = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <SearchBar
+        placeholder="Tìm kiếm vé..."
+        onChangeText={handleSearch}
+        value={searchQuery}
+        containerStyle={styles.searchContainer}
+        inputContainerStyle={styles.searchInput}
+        searchIcon={{color: '#ff0000'}}
+        placeholderTextColor={'#f2f2f2'}
+        inputStyle={{color: '#fff'}}
+      />
       <FlatList
-        data={tickets}
+        data={filteredTickets}
         keyExtractor={(item, index) => item + index}
         renderItem={renderTicket}
       />
@@ -87,6 +111,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 5,
     color: '#000'
+  },
+  searchContainer: {
+    backgroundColor: "transparent",
+    borderBottomWidth: 0,
+    borderTopWidth: 0,
+    marginBottom: 10
+  },
+  searchInput: {
+    backgroundColor: "#575958",
   },
 });
 

@@ -6,6 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from payos import PayOS, PaymentData, ItemData
 import os
+import pytz
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -25,7 +26,7 @@ API_URL = os.getenv("API_URL")
 app = FastAPI()
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(r"D:\StudyIT\Nam4Ki1\LTDNT\DoAn\MovieBookingAppBackend\moviebookingapp-435cc-firebase-adminsdk-hjrcs-55258e72df.json")
+    cred = credentials.Certificate(r"C:\Users\user\.vscode\code\IE307\project\MovieBookingApp\moviebookingapp-435cc-firebase-adminsdk-hjrcs-41cbbc379c.json")
     firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -74,9 +75,7 @@ class Ticket(BaseModel):
   user_id: str = ""
   movie_id: str = ""
   movie_title: str = ""
-  movie_id: str
   cinema_name: str = ""
-  cancel_reason: str = ""
   hall_name: str = ""
   showtime: datetime = "1999-03-30T17:00:00.610000Z"
   seat_number: str = ""
@@ -89,6 +88,7 @@ class Ticket(BaseModel):
 class User(BaseModel):
   name: str = ""
   email: str = ""
+  password: str = ""
   dob: datetime = "1999-03-30T17:00:00.610000Z"
   gender: int = 1
   phone_number: str = ""
@@ -211,16 +211,16 @@ async def delete_movie(movie_id: str, admin: bool = Depends(get_current_admin_us
   return movie_id
 
 #Get tickets
-@app.get("/tickets", response_model=List[Ticket])
+@app.get("/tickets", response_model=List[Dict])
 async def get_tickets():
   tickets_ref = db.collection('tickets')
   tickets = tickets_ref.stream()
   ticket_list = []
 
   for ticket in tickets:
-      ticket_data = ticket.to_dict()
-      ticket_data["id"] = ticket.id
-      ticket_list.append(ticket_data)
+    ticket_data = ticket.to_dict()
+    ticket_data["id"] = ticket.id
+    ticket_list.append(ticket_data)
 
   return ticket_list
 
@@ -739,6 +739,58 @@ async def update_user_info(user_id: str, updates: Dict):
     user_ref.update(updates)
 
     return {"message": f"User {user_id} updated successfully", "updated_fields": updates}
+
+#Dashboard
+class MovieStats(BaseModel):
+    movie_id: str
+    movie_title: str
+    revenue: int
+    tickets_sold: int
+    
+@app.get("/stats/users")
+async def get_new_users(start_date: datetime, end_date: datetime):
+    users_ref = db.collection("users")
+    query = users_ref.where("created_at", ">=", start_date).where("created_at", "<=", end_date)
+    users = query.stream()
+
+    # Chuyển đổi múi giờ
+    utc = pytz.utc
+    local_tz = pytz.timezone("Asia/Bangkok")  # Thay đổi thành múi giờ mong muốn (UTC+7)
+
+    grouped_data = {}
+    for user in users:
+        user_data = user.to_dict()
+        created_at = user_data["created_at"].replace(tzinfo=utc).astimezone(local_tz)
+        created_date = created_at.date()  # Chỉ lấy phần ngày
+        if created_date not in grouped_data:
+            grouped_data[created_date] = 0
+        grouped_data[created_date] += 1
+
+    result = [{"date": date.isoformat(), "count": count} for date, count in grouped_data.items()]
+    result.sort(key=lambda x: x["date"])
+    return result
+
+# Get revenue and tickets sold by movie within a time range
+@app.get("/stats/movies")
+async def get_movie_stats(start_date: datetime, end_date: datetime):
+    tickets_ref = db.collection("tickets")
+    query = tickets_ref.where("created_at", ">=", start_date).where("created_at", "<=", end_date)
+    tickets = query.stream()
+
+    stats = {}
+    for ticket in tickets:
+        data = ticket.to_dict()
+        movie_id = data["movie_id"]
+        if movie_id not in stats:
+            stats[movie_id] = {
+                "movie_title": data["movie_title"],
+                "revenue": 0,
+                "tickets_sold": 0,
+            }
+        stats[movie_id]["revenue"] += data["price"]
+        stats[movie_id]["tickets_sold"] += 1
+
+    return {"stats": list(stats.values())}
 
 if __name__ == "__main__":
     import uvicorn

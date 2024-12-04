@@ -323,7 +323,12 @@ export default function Admin() {
         drawerActiveTintColor: '#ff0000',
         drawerInactiveTintColor: '#fff',
         headerTintColor: '#ff0000',
-        headerShown: getHiddenDrawer(route)
+        headerShown: getHiddenDrawer(route),
+        headerRight: () => (
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+            <Icon name="log-out-outline" size={24} color="#ff0000" />
+          </TouchableOpacity>
+        ),
       })}
     >
       <Drawer.Screen name="Bảng điều khiển" component={Dashboard} />
@@ -335,3 +340,9 @@ export default function Admin() {
     </Drawer.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  logoutButton: {
+    marginRight: 15,
+  },
+});
