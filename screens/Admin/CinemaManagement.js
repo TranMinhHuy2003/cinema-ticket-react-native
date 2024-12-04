@@ -11,6 +11,7 @@ import {
 import { API_URL } from '@env';
 import axios from "axios";
 import { useFocusEffect } from '@react-navigation/native';
+import { SearchBar } from '@rneui/themed';
 
 const CinemaManagementScreen = ({navigation}) => {
   const [cinema, setCinema] = useState([]);
@@ -18,11 +19,27 @@ const CinemaManagementScreen = ({navigation}) => {
   const [seatCapacity, setSeatCapacity] = useState("");
   const [selectedHallId, setSelectedHallId] = useState();
   const [refresh, setRefresh] = useState(false);
+  const [filteredCinemas, setFilteredCinemas] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query) {
+      const filtered = cinema.filter((cinema) =>
+        cinema.name.toLowerCase().includes(query.toLowerCase()) ||
+        cinema.location.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredCinemas(filtered);
+    } else {
+      setFilteredCinemas(cinema);
+    }
+  };
 
   const fetchCinema = async () => {
     try {
       const response = await axios.get(`${API_URL}/cinemas`);
       setCinema(response.data);
+      setFilteredCinemas(response.data);
     } catch (error) {
       console.error("Failed to fetch cinema:", error);
     }
@@ -59,8 +76,18 @@ const CinemaManagementScreen = ({navigation}) => {
 
   return (
     <View style={styles.container}>
+      <SearchBar
+        placeholder="Tìm kiếm rạp..."
+        onChangeText={handleSearch}
+        value={searchQuery}
+        containerStyle={styles.searchContainer}
+        inputContainerStyle={styles.searchInput}
+        searchIcon={{color: '#ff0000'}}
+        placeholderTextColor={'#f2f2f2'}
+        inputStyle={{color: '#fff'}}
+      />
       <FlatList
-        data={cinema}
+        data={filteredCinemas}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
           <View style={styles.listItem}>
@@ -69,7 +96,7 @@ const CinemaManagementScreen = ({navigation}) => {
             <View style={styles.actionButtons}>
               <TouchableOpacity 
                 style={styles.editButton}
-                onPress={() => navigation.navigate('EditCinema', { cinema: item, cinema_id: item.id })}
+                onPress={() => navigation.navigate('EditCinema', { cinema: item, cinema_id: item.id, cinemas: cinema })}
               >
                 <Text style={styles.buttonText}>Chỉnh sửa</Text>
               </TouchableOpacity>
@@ -85,7 +112,7 @@ const CinemaManagementScreen = ({navigation}) => {
       />
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => navigation.navigate('AddCinema')}
+        onPress={() => navigation.navigate('AddCinema', {cinemas: cinema})}
       >
         <Text style={styles.buttonText}>
           Thêm rạp chiếu mới
@@ -144,7 +171,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     textAlign: 'center'
-  }
+  },
+  searchContainer: {
+    backgroundColor: "transparent",
+    borderBottomWidth: 0,
+    borderTopWidth: 0,
+    marginBottom: 20
+  },
+  searchInput: {
+    backgroundColor: "#575958",
+  },
 });
 
 export default CinemaManagementScreen;

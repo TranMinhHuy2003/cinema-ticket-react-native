@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, ScrollView, TouchableWithoutFeedback, TouchableOpacity, FlatList } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {Keyboard} from 'react-native';
-import { API_URL } from '@env';
 import axios from 'axios';
 import { API_URL } from '@env';
 
@@ -161,7 +160,9 @@ const EditMovie = ({ route, navigation }) => {
             style={{marginBottom: 40, marginRight: 231, backgroundColor: '#808080'}}
             onDateChange={setReleaseDate}
           />
-          <Button onPress={handleUpdate} color="#ff0000" title="Cập nhật" />
+          <TouchableOpacity style={styles.addButton} onPress={handleUpdate}>
+            <Text style={styles.buttonText}>Cập nhật</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </TouchableWithoutFeedback>
@@ -207,6 +208,18 @@ const styles = StyleSheet.create({
   removeGenre: {
     color: '#ff0000',
     fontWeight: 'bold',
+  },
+  addButton: {
+    backgroundColor: "#ff0000",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 26,
+    marginTop: 16,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
 });
 

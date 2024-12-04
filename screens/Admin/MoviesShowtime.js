@@ -2,17 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Button, FlatList, StyleSheet, Image, Touchable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
-import { API_URL } from '@env';
 import axios from 'axios';
 import { API_URL } from '@env';
+import { SearchBar } from '@rneui/themed';
 
 export default function MoviesShowtime() {
   const [movies, setMovies] = useState([]);
+  const [filteredMovies, setFilteredMovies] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query) {
+      const filtered = movies.filter((movie) =>
+        movie.title.toLowerCase().includes(query.toLowerCase()) ||
+        movie.description.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredMovies(filtered);
+    } else {
+      setFilteredMovies(movies);
+    }
+  };
 
   const fetchMovies = async () => {
     try {
-      const response = await axios.get(`${ API_URL }/movies`);
+      const response = await axios.get(`${API_URL}/movies`);
       setMovies(response.data);
+      setFilteredMovies(response.data);
     } catch (error) {
       console.error('Failed to fetch movies:', error);
     }
@@ -26,8 +42,18 @@ export default function MoviesShowtime() {
 
   return (
     <View style={styles.container}>
+      <SearchBar
+        placeholder="Tìm kiếm suất chiếu của phim..."
+        onChangeText={handleSearch}
+        value={searchQuery}
+        containerStyle={styles.searchContainer}
+        inputContainerStyle={styles.searchInput}
+        searchIcon={{color: '#ff0000'}}
+        placeholderTextColor={'#f2f2f2'}
+        inputStyle={{color: '#fff'}}
+      />
       <FlatList
-        data={movies}
+        data={filteredMovies}
         style={{marginTop: 20}}
         keyExtractor={(item, index) => item + index}
         renderItem={({ item }) => (
@@ -89,5 +115,13 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: 5,
     marginRight: 10,
+  },
+  searchContainer: {
+    backgroundColor: "transparent",
+    borderBottomWidth: 0,
+    borderTopWidth: 0,
+  },
+  searchInput: {
+    backgroundColor: "#575958",
   },
 });

@@ -23,6 +23,7 @@ export default function RegisterScreen({ navigation }) {
     email: '',
     password: '',
     confirmPassword: '',
+    created_at: new Date()
   });
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
 
@@ -68,6 +69,7 @@ export default function RegisterScreen({ navigation }) {
         phone_number: form.phone,
         password: form.password,
         is_admin: false,
+        created_at: new Date()
       })
       .then(() => {
         Alert.alert('Đăng ký thành công', `Chào mừng ${form.fullName}!`);
@@ -164,6 +166,7 @@ export default function RegisterScreen({ navigation }) {
           placeholder="Số điện thoại"
           placeholderTextColor="#ccc"
           style={styles.input}
+          keyboardType='numeric'
           onChangeText={(text) => setForm({ ...form, phone: text })}
         />
         <TextInput
