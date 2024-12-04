@@ -1,70 +1,128 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
   Image,
   TouchableOpacity,
-  FlatList,
   StyleSheet,
   ActivityIndicator,
-  Alert,
+  Dimensions,
+  PanResponder,
+  Animated,
+  ScrollView,
 } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { NavigationContainer } from '@react-navigation/native';
 import axios from 'axios';
 import { API_URL } from '@env';
 import MovieDetails from '../MovieDetails';
 import BookingTheater from '../BookingTheater';
 import BookingSeats from '../BookingSeats';
 import Payment from '../Payment';
-import SalesPromotionList from '../SalesPromotionList';
-import SalesPromotionDetail from '../SalesPromotionDetail';
 
 const Stack = createStackNavigator(); // Tạo Stack Navigator
+const { width } = Dimensions.get('window'); // Lấy kích thước màn hình
 
-// Danh sách phim
+function MovieSlider({ title, movies, navigation }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const translateX = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      handleNext();
+    }, 15000); // Tự động chuyển phim sau mỗi 15 giây
+
+    return () => clearInterval(interval); // Xóa interval khi component bị hủy
+  }, [currentIndex]);
+
+  const handleNext = () => {
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % movies.length);
+  };
+
+  const handlePrev = () => {
+    setCurrentIndex((prevIndex) =>
+      prevIndex === 0 ? movies.length - 1 : prevIndex - 1
+    );
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        Math.abs(gestureState.dx) > 10, // Phát hiện cử chỉ lướt theo trục x
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx > 50) {
+          handlePrev(); // Lướt sang phải
+        } else if (gestureState.dx < -50) {
+          handleNext(); // Lướt sang trái
+        }
+      },
+    })
+  ).current;
+
+  if (movies.length === 0) {
+    return (
+      <View style={styles.noMoviesContainer}>
+        <Text style={styles.noMoviesText}>Không có phim nào để hiển thị!</Text>
+      </View>
+    );
+  }
+
+  const currentMovie = movies[currentIndex];
+
+  return (
+    <View style={styles.sliderContainer}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <Animated.View
+        style={[styles.slider]}
+        {...panResponder.panHandlers} // Gắn sự kiện PanResponder vào View
+      >
+        <Image source={{ uri: currentMovie.posterUrl }} style={styles.poster} />
+        <View style={styles.movieInfoContainer}>
+          <Text style={styles.movieTitle}>{currentMovie.title}</Text>
+          <Text style={styles.movieDescription} numberOfLines={3}>
+            {currentMovie.description}
+          </Text>
+          <Text style={styles.movieRating}>⭐ {currentMovie.imdbRating}</Text>
+          <Text style={styles.movieReleaseDate}>
+            📅 {new Date(currentMovie.releaseDate).toLocaleDateString()}
+          </Text>
+          <TouchableOpacity
+            style={styles.detailsButton}
+            onPress={() =>
+              navigation.navigate('MovieDetails', { movieId: currentMovie.id })
+            }
+          >
+            <Text style={styles.detailsButtonText}>Xem chi tiết</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
 function MovieList({ navigation }) {
-  const [movies, setMovies] = useState([]); // Trạng thái lưu danh sách phim
-  const [loading, setLoading] = useState(true); // Trạng thái tải dữ liệu
+  const [upcomingMovies, setUpcomingMovies] = useState([]);
+  const [allMovies, setAllMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Gọi API để lấy danh sách phim
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        const response = await axios.get(`${API_URL}/movies`);
-        setMovies(response.data); // Lưu danh sách phim vào state
+        const [upcomingResponse, allResponse] = await Promise.all([
+          axios.get(`${API_URL}/movies/upcoming`),
+          axios.get(`${API_URL}/movies`),
+        ]);
+        setUpcomingMovies(upcomingResponse.data);
+        setAllMovies(allResponse.data);
       } catch (error) {
         console.error(error);
-        Alert.alert('Lỗi', 'Không thể tải danh sách phim!');
+        alert('Không thể tải danh sách phim');
       } finally {
-        setLoading(false); // Tắt trạng thái tải
+        setLoading(false);
       }
     };
 
     fetchMovies();
   }, []);
-
-  const renderMovieItem = ({ item }) => (
-    <View style={styles.movieItem}>
-      <Image source={{ uri: item.posterUrl }} style={styles.poster} />
-      <View style={styles.movieDetails}>
-        <Text style={styles.movieTitle}>{item.title}</Text>
-        <Text style={styles.movieDescription} numberOfLines={3}>
-          {item.description}
-        </Text>
-        <Text style={styles.movieRating}>⭐ {item.imdbRating}</Text>
-        <Text style={styles.movieReleaseDate}>
-          📅 {new Date(item.releaseDate).toLocaleDateString()}
-        </Text>
-        <TouchableOpacity
-          style={styles.detailsButton}
-          onPress={() => navigation.navigate('MovieDetails', { movieId: item.id })} // Chuyển hướng đến MovieDetails
-        >
-          <Text style={styles.detailsButtonText}>Xem chi tiết</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
 
   if (loading) {
     return (
@@ -74,109 +132,143 @@ function MovieList({ navigation }) {
     );
   }
 
-  if (movies.length === 0) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.noMoviesText}>Không có phim nào để hiển thị!</Text>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Danh sách phim</Text>
-      <FlatList
-        data={movies}
-        renderItem={renderMovieItem}
-        keyExtractor={(item) => item.id} // Sử dụng movieId làm khóa
-        contentContainerStyle={styles.list}
+    <ScrollView style={styles.scrollContainer}>
+      <MovieSlider
+        title="🎥 Phim đang chiếu"
+        movies={upcomingMovies}
+        navigation={navigation}
       />
-    </View>
+      <MovieSlider
+        title="📜 Danh sách phim"
+        movies={allMovies}
+        navigation={navigation}
+      />
+    </ScrollView>
   );
 }
 
 // Stack Navigator trong HomeScreen
 export default function HomeScreen() {
   return (
-    <NavigationContainer independent={true}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="MovieList" component={MovieList} />
-        <Stack.Screen name="MovieDetails" component={MovieDetails} />
-        <Stack.Screen name="BookingTheater" component={BookingTheater} />
-        <Stack.Screen name="BookingSeats" component={BookingSeats} />
-        <Stack.Screen name="Payment" component={Payment} />
-        <Stack.Screen name="SalesPromotionList" component={SalesPromotionList} />
-        <Stack.Screen name="SalesPromotionDetail" component={SalesPromotionDetail} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#1e1e1e',
+        },
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          color: '#fff',
+        },
+        headerTintColor: '#ff0000',
+      }}
+    >
+      <Stack.Screen
+        name="MovieList"
+        component={MovieList}
+        options={{
+          headerShown: false,
+          title: 'Danh Sách Phim',
+        }}
+      />
+      <Stack.Screen
+        name="MovieDetails"
+        component={MovieDetails}
+        options={{ title: 'Chi Tiết Phim' }}
+      />
+      <Stack.Screen
+        name="BookingTheater"
+        component={BookingTheater}
+        options={{ title: 'Chọn Rạp & Suất Chiếu' }}
+      />
+      <Stack.Screen
+        name="BookingSeats"
+        component={BookingSeats}
+        options={{ title: 'Chọn Ghế' }}
+      />
+      <Stack.Screen
+        name="Payment"
+        component={Payment}
+        options={{ title: 'Thanh Toán' }}
+      />
+    </Stack.Navigator>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollContainer: {
     flex: 1,
     backgroundColor: '#1e1e1e',
   },
-  title: {
+  sectionTitle: {
+    fontSize: 22,
     color: '#fff',
-    fontSize: 24,
+    fontWeight: 'bold',
+    marginVertical: 15,
     textAlign: 'center',
-    marginVertical: 20,
   },
-  list: {
-    paddingHorizontal: 10,
+  sliderContainer: {
+    marginBottom: 30,
+    alignItems: 'center',
   },
-  movieItem: {
-    flexDirection: 'row',
-    backgroundColor: '#2c2c2c',
-    marginBottom: 10,
-    borderRadius: 8,
-    overflow: 'hidden',
+  slider: {
+    width: width * 0.9,
+    flexDirection: 'row', // Sắp xếp poster và thông tin ngang hàng
+    alignItems: 'center',
+    backgroundColor: '#333',
+    borderRadius: 10,
+    padding: 15,
+    elevation: 5,
   },
   poster: {
-    width: 100,
-    height: 150,
+    width: 140,
+    height: 200,
+    borderRadius: 8,
+    marginRight: 15, // Khoảng cách giữa poster và thông tin phim
   },
-  movieDetails: {
+  movieInfoContainer: {
     flex: 1,
-    padding: 10,
   },
   movieTitle: {
+    fontSize: 22,
     color: '#fff',
-    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 10,
   },
   movieDescription: {
-    color: '#ccc',
-    fontSize: 14,
+    fontSize: 16,
+    color: '#ddd',
     marginBottom: 10,
   },
   movieRating: {
-    color: '#ffcc00',
-    fontSize: 14,
-    marginBottom: 5,
+    fontSize: 18,
+    color: '#FFD700',
+    marginBottom: 10,
   },
   movieReleaseDate: {
-    color: '#bbb',
-    fontSize: 14,
-    marginBottom: 10,
+    fontSize: 16,
+    color: '#ccc',
+    marginBottom: 15,
   },
   detailsButton: {
     backgroundColor: '#ff0000',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    padding: 8,
+    alignItems: 'center',
     borderRadius: 5,
-    alignSelf: 'flex-start',
   },
   detailsButtonText: {
     color: '#fff',
-    fontSize: 14,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  noMoviesContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   noMoviesText: {
-    color: '#fff',
     fontSize: 18,
+    color: '#fff',
     textAlign: 'center',
-    marginTop: 20,
   },
 });

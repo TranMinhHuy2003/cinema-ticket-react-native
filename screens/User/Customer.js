@@ -8,6 +8,7 @@ import { AuthContext } from '../../context/AuthContext';
 import HomeScreen from './HomeScreen';
 import UserInfo from './UserInfo';
 import YourTicket from './YourTicket';
+import SalesPromotionList from '../SalesPromotionList'
 
 const Drawer = createDrawerNavigator();
 
@@ -52,6 +53,7 @@ export default function Customer() {
       })}
     >
       <Drawer.Screen name="HomePage" component={HomeScreen} options={{ title: 'Trang Chủ' }} />
+      <Drawer.Screen name="SalesPromotionList" component={SalesPromotionList} options={{ title: 'Thông Tin Khuyến Mãi' }} />
       <Drawer.Screen name="UserInfo" component={UserInfo} options={{ title: 'Thông Tin Tài Khoản' }} />
       <Drawer.Screen name="YourTicket" component={YourTicket} options={{ title: 'Vé Của Bạn' }} />
     </Drawer.Navigator>
