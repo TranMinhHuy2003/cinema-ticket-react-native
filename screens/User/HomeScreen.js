@@ -17,8 +17,7 @@ import MovieDetails from '../MovieDetails';
 import BookingTheater from '../BookingTheater';
 import BookingSeats from '../BookingSeats';
 import Payment from '../Payment';
-import SalesPromotionList from '../SalesPromotionList';
-import SalesPromotionDetail from '../SalesPromotionDetail';
+
 
 const Stack = createStackNavigator(); // Tạo Stack Navigator
 
@@ -98,17 +97,47 @@ function MovieList({ navigation }) {
 // Stack Navigator trong HomeScreen
 export default function HomeScreen() {
   return (
-    <NavigationContainer independent={true}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="MovieList" component={MovieList} />
-        <Stack.Screen name="MovieDetails" component={MovieDetails} />
-        <Stack.Screen name="BookingTheater" component={BookingTheater} />
-        <Stack.Screen name="BookingSeats" component={BookingSeats} />
-        <Stack.Screen name="Payment" component={Payment} />
-        <Stack.Screen name="SalesPromotionList" component={SalesPromotionList} />
-        <Stack.Screen name="SalesPromotionDetail" component={SalesPromotionDetail} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#1e1e1e',
+        },
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          color: '#fff',
+        },
+        headerTintColor: '#ff0000',
+      }}
+    >
+      <Stack.Screen
+        name="MovieList"
+        component={MovieList}
+        options={{
+          headerShown: false, // Hiển thị header ở MovieList
+          title: 'Danh Sách Phim',
+        }}
+      />
+      <Stack.Screen
+        name="MovieDetails"
+        component={MovieDetails}
+        options={{ title: 'Chi Tiết Phim' }}
+      />
+      <Stack.Screen
+        name="BookingTheater"
+        component={BookingTheater}
+        options={{ title: 'Chọn Rạp & Suất Chiếu' }}
+      />
+      <Stack.Screen
+        name="BookingSeats"
+        component={BookingSeats}
+        options={{ title: 'Chọn Ghế' }}
+      />
+      <Stack.Screen
+        name="Payment"
+        component={Payment}
+        options={{ title: 'Thanh Toán' }}
+      />
+    </Stack.Navigator>
   );
 }
 

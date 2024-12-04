@@ -26,7 +26,7 @@ API_URL = os.getenv("API_URL")
 app = FastAPI()
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(r"C:\Users\user\.vscode\code\IE307\project\MovieBookingApp\moviebookingapp-435cc-firebase-adminsdk-hjrcs-41cbbc379c.json")
+    cred = credentials.Certificate(r"D:\StudyIT\Nam4Ki1\LTDNT\backup\moviebookingapp-435cc-firebase-adminsdk-hjrcs-55258e72df.json")
     firebase_admin.initialize_app(cred)
 db = firestore.client()
 

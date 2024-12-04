@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, FlatList, Image, StyleSheet, Dimensions, TouchableOpacity, } from "react-native";
+import { View, Text, FlatList, Image, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
 const { width } = Dimensions.get("window");
@@ -51,7 +51,6 @@ const promotions = [
     ],
   },
 ];
-
 
 const SalesPromotionList = () => {
   const navigation = useNavigation();
@@ -110,21 +109,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   promotionImage: {
-    width: width,
-    height: width * 0.5,
+    width: width - 20,
+    height: (width - 20) * 0.5,
     resizeMode: "cover",
+    alignSelf: "center",
   },
   promotionContent: {
     padding: 10,
   },
   promotionTitle: {
-    fontSize: 25,
+    fontSize: 18,
     fontWeight: "bold",
     color: "#000",
     marginBottom: 5,
   },
   promotionDate: {
     fontSize: 14,
-    color: "#000",
+    color: "#666",
   },
 });

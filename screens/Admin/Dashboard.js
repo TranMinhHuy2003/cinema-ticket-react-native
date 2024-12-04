@@ -13,6 +13,9 @@ const DashboardScreen = () => {
   const [movieRevenue, setMovieRevenue] = useState([]);
   const [movieTickets, setMovieTickets] = useState([]);
 
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+
   useEffect(() => {
     fetchUserStats();
     fetchMovieStats(); // Cập nhật dữ liệu khi quay lại màn hình
@@ -49,13 +52,17 @@ const DashboardScreen = () => {
   };
 
   const onStartTimeChange = (event, selectedDate) => {
+    setShowStartPicker(true)
     const currentDate = selectedDate || startDate;
     setStartDate(currentDate)
+    setShowStartPicker(false)
   };
 
   const onEndTimeChange = (event, selectedDate) => {
+    setShowEndPicker(true)
     const currentDate = selectedDate || endDate;
     setEndDate(currentDate)
+    setShowEndPicker(false)
   };
 
   const formatDate = (dateString) => { // Chuyển chuỗi thành đối tượng Date
