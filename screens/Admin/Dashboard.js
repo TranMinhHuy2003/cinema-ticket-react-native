@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, Dimensions, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Dimensions, ScrollView, TouchableOpacity } from "react-native";
 import { LineChart, BarChart, PieChart } from "react-native-chart-kit";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from "axios";
@@ -52,14 +52,12 @@ const DashboardScreen = () => {
   };
 
   const onStartTimeChange = (event, selectedDate) => {
-    setShowStartPicker(true)
     const currentDate = selectedDate || startDate;
     setStartDate(currentDate)
     setShowStartPicker(false)
   };
 
   const onEndTimeChange = (event, selectedDate) => {
-    setShowEndPicker(true)
     const currentDate = selectedDate || endDate;
     setEndDate(currentDate)
     setShowEndPicker(false)
@@ -77,27 +75,41 @@ const DashboardScreen = () => {
       <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
         <View>
           <Text style={styles.label}>Chọn ngày bắt đầu:</Text>
-          <Text style={styles.dateText}>
-            {formatDate(startDate)}
-          </Text>
-          <DateTimePicker
-            mode="date"
-            value={startDate}
-            style={{backgroundColor: '#808080'}}
-            onChange={onStartTimeChange}
-          />
+          <TouchableOpacity
+            style={styles.datePicker}
+            onPress={() => setShowStartPicker(!showStartPicker)}
+          >
+            <Text style={styles.dateText}>
+              {formatDate(startDate)}
+            </Text>
+          </TouchableOpacity>
+          {showStartPicker && (
+            <DateTimePicker
+              mode="date"
+              value={startDate}
+              style={{backgroundColor: '#808080'}}
+              onChange={onStartTimeChange}
+            />
+          )}
         </View>
         <View>
           <Text style={styles.label}>Chọn ngày kết thúc:</Text>
-          <Text style={styles.dateText}>
-            {formatDate(endDate)}
-          </Text>
-          <DateTimePicker
-            mode="date"
-            value={endDate}
-            style={{backgroundColor: '#808080'}}
-            onChange={onEndTimeChange}
-          />
+          <TouchableOpacity
+            style={styles.datePicker}
+            onPress={() => setShowEndPicker(!showEndPicker)}
+          >
+            <Text style={styles.dateText}>
+              {formatDate(endDate)}
+            </Text>
+          </TouchableOpacity>
+          {showEndPicker && (
+            <DateTimePicker
+              mode="date"
+              value={endDate}
+              style={{backgroundColor: '#808080'}}
+              onChange={onEndTimeChange}
+            />
+          )}
         </View>
       </View>
       <Text style={styles.title}>Lượng người dùng đăng ký mới</Text>
@@ -187,9 +199,17 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   dateText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#fff',
     marginVertical: 10
+  },
+  datePicker: {
+    backgroundColor: '#333',
+    padding: 5,
+    borderRadius: 8,
+    marginBottom: 10,
+    marginTop: 10,
+    alignItems: 'center',
   },
 });
 
