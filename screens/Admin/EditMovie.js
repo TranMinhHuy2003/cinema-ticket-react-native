@@ -3,6 +3,7 @@ import { View, Text, TextInput, Button, StyleSheet, ScrollView, TouchableWithout
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {Keyboard} from 'react-native';
 import axios from 'axios';
+import { format } from 'date-fns';
 import { API_URL } from '@env';
 
 const EditMovie = ({ route, navigation }) => {
@@ -18,6 +19,7 @@ const EditMovie = ({ route, navigation }) => {
   const [imdbRating, setImdbRating] = useState(movie.imdbRating);
   const [rottenTomatoesRating, setRottenTomatoesRating] = useState(movie.rottenTomatoesRating);
   const [isFocused, setIsFocused] = useState({});
+  const [showPicker, setShowPicker] = useState(false);
 
   const handleAddGenre = () => {
     if (newGenre.trim()) {
@@ -29,6 +31,12 @@ const EditMovie = ({ route, navigation }) => {
   const handleRemoveGenre = (index) => {
     const updatedGenres = genres.filter((_, i) => i !== index);
     setGenres(updatedGenres);
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    const currentDate = selectedDate || releaseDate;
+    setReleaseDate(currentDate)
+    setShowPicker(false);
   };
 
   const handleUpdate = () => {
@@ -153,13 +161,22 @@ const EditMovie = ({ route, navigation }) => {
           />
           
           <Text style={styles.inputLabel}>Ngày phát hành</Text>
-          <DateTimePicker
-            value={releaseDate}
-            mode="date"
-            format="DD-MM-YYYY"
-            style={{marginBottom: 40, marginRight: 231, backgroundColor: '#808080'}}
-            onDateChange={setReleaseDate}
-          />
+          <TouchableOpacity
+            style={styles.datePicker}
+            onPress={() => setShowPicker(!showPicker)}
+          >
+            <Text style={styles.dateText}>
+              {format(releaseDate, "dd-MM-yyyy")}
+            </Text>
+          </TouchableOpacity>
+          {showPicker && (
+            <DateTimePicker
+              value={releaseDate}
+              mode="date"
+              style={{marginBottom: 40, marginRight: 231, backgroundColor: '#808080'}}
+              onChange={handleDateChange}
+            />
+          )}
           <TouchableOpacity style={styles.addButton} onPress={handleUpdate}>
             <Text style={styles.buttonText}>Cập nhật</Text>
           </TouchableOpacity>
@@ -220,6 +237,18 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  dateText: {
+    color: '#fff',
+    fontSize: 16
+  },
+  datePicker: {
+    backgroundColor: '#333',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+    marginTop: 10,
+    alignItems: 'center',
   },
 });
 

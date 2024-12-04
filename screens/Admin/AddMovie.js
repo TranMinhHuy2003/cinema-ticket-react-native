@@ -3,6 +3,7 @@ import { Alert, View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Tou
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {Keyboard} from 'react-native';
 import { API_URL } from '@env';
+import { format } from 'date-fns';
 import axios from 'axios';
 
 const AddMovie = ({ navigation }) => {
@@ -17,6 +18,7 @@ const AddMovie = ({ navigation }) => {
   const [imdbRating, setImdbRating] = useState('');
   const [rottenTomatoesRating, setRottenTomatoesRating] = useState('');
   const [isFocused, setIsFocused] = useState({});
+  const [showPicker, setShowPicker] = useState(false);
 
   const handleAddGenre = () => {
     if (newGenre.trim()) {
@@ -33,6 +35,7 @@ const AddMovie = ({ navigation }) => {
   const handleDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || releaseDate;
     setReleaseDate(currentDate)
+    setShowPicker(false);
   };
 
   const handleSubmit = () => {
@@ -157,12 +160,22 @@ const AddMovie = ({ navigation }) => {
           />
           
           <Text style={styles.inputLabel}>Ngày phát hành</Text>
-          <DateTimePicker
-            value={releaseDate}
-            mode="date"
-            style={{marginBottom: 40, marginRight: 231, backgroundColor: '#808080'}}
-            onChange={handleDateChange}
-          />
+          <TouchableOpacity
+            style={styles.datePicker}
+            onPress={() => setShowPicker(!showPicker)}
+          >
+            <Text style={styles.dateText}>
+              {format(releaseDate, "dd-MM-yyyy")}
+            </Text>
+          </TouchableOpacity>
+          {showPicker && (
+            <DateTimePicker
+              value={releaseDate}
+              mode="date"
+              style={{marginBottom: 40, marginRight: 231, backgroundColor: '#808080'}}
+              onChange={handleDateChange}
+            />
+          )}
           <TouchableOpacity style={styles.addButton} onPress={handleSubmit}>
             <Text style={styles.buttonText}>Thêm</Text>
           </TouchableOpacity>
@@ -223,6 +236,18 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  dateText: {
+    color: '#fff',
+    fontSize: 16
+  },
+  datePicker: {
+    backgroundColor: '#333',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+    marginTop: 10,
+    alignItems: 'center',
   },
 });
 
