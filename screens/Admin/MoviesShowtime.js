@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   },
   movieDescription: {
     color: '#bdc3c7',
-    width: 250,
+    width: 220,
     marginRight: 10
   },
   posterImage: {

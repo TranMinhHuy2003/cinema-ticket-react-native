@@ -80,7 +80,7 @@ export default function TicketDetailsScreen ({ route, navigation }) {
             style={styles.posterImage}
           />
         </View>
-        <View style={{width: 200}}>
+        <View style={{width: 170}}>
           <Text style={[styles.text, {fontSize: 20, fontWeight: 'bold'}]}>{ticket.movie_title}</Text>
           <Text style={styles.text}>Rạp: {ticket.cinema_name}</Text>
           <Text style={styles.text}>Giá vé: {ticket.price}</Text>
