@@ -11,45 +11,72 @@ import {
 import { AuthContext } from '../../context/AuthContext';
 import axios from 'axios';
 import { API_URL } from '@env';
+import TicketDetails from './TicketDetails'; // Import TicketDetails
 
 const YourTicket = () => {
   const { userId } = useContext(AuthContext); // Lấy userId từ AuthContext
   const [tickets, setTickets] = useState([]); // Dữ liệu vé
   const [loading, setLoading] = useState(true); // Trạng thái tải dữ liệu
+  const [selectedTicket, setSelectedTicket] = useState(null); // Quản lý vé được chọn
 
   // Gọi API để lấy thông tin vé
+  const fetchTickets = async () => {
+    setLoading(true); // Hiển thị trạng thái loading
+    try {
+      const response = await axios.get(`${API_URL}/tickets/${userId}`);
+      setTickets(response.data); // Lưu dữ liệu vé vào state
+    } catch (error) {
+
+      
+      console.error(error);
+      Alert.alert('Lỗi', 'Không thể lấy thông tin vé!');
+    } finally {
+      setLoading(false); // Tắt trạng thái loading
+    }
+  };
+
   useEffect(() => {
     if (!userId) {
       Alert.alert('Lỗi', 'Không tìm thấy thông tin người dùng!');
       return;
     }
 
-    const fetchTickets = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/tickets/${userId}`);
-        setTickets(response.data); // Lưu dữ liệu vé vào state
-      } catch (error) {
-        console.error(error);
-        Alert.alert('Lỗi', 'Không thể lấy thông tin vé!');
-      } finally {
-        setLoading(false); // Tắt trạng thái tải
-      }
-    };
-
-    fetchTickets();
+    fetchTickets(); // Lấy danh sách vé ngay khi load
   }, [userId]);
 
-  // Xử lý trạng thái vé
-  const handleStatus = (status) => {
-    if (!status || status === 'Đã hủy') {
-      return 'Đã hủy';
-    }
-    return 'Đã xác nhận';
-  };
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#ff0000" />
+      </View>
+    );
+  }
+
+  if (selectedTicket) {
+    // Nếu đã chọn vé, hiển thị màn hình chi tiết
+    return (
+      <TicketDetails
+        ticket={selectedTicket}
+        onCancel={() => setSelectedTicket(null)} // Quay lại danh sách vé
+        onTicketUpdated={fetchTickets} // Cập nhật danh sách vé sau khi hủy
+      />
+    );
+  }
+
+  if (tickets.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.noTicketText}>Bạn chưa có vé nào!</Text>
+      </View>
+    );
+  }
 
   // Hiển thị thông tin vé
   const renderTicket = ({ item }) => (
-    <TouchableOpacity style={styles.ticketItem}>
+    <TouchableOpacity
+      style={styles.ticketItem}
+      onPress={() => setSelectedTicket(item)} // Lưu vé được chọn
+    >
       <View>
         <View style={styles.decorDotLeft}></View>
         <View style={styles.decorDotRight}></View>
@@ -59,12 +86,7 @@ const YourTicket = () => {
           ⏰ Thời gian: {new Date(item.showtime).toLocaleString()}
         </Text>
         <Text style={styles.ticketInfo}>💺 Ghế: {item.seat_number}</Text>
-        <Text style={styles.ticketInfo}>
-          📜 Trạng thái: {handleStatus(item.status)}
-        </Text>
-        <Text style={styles.ticketInfo}>
-          💵 Tổng tiền: {item.total_price?.toLocaleString() || 0} VNĐ
-        </Text>
+        <Text style={styles.ticketInfo}>💵 Giá: {item.price?.toLocaleString()} VNĐ</Text>
       </View>
     </TouchableOpacity>
   );
@@ -89,7 +111,7 @@ const YourTicket = () => {
     <View style={styles.container}>
       <FlatList
         data={tickets}
-        keyExtractor={(item, index) => index.toString()} // Sử dụng index làm key
+        keyExtractor={(item) => item.id} // Sử dụng ticket ID làm key
         renderItem={renderTicket}
       />
     </View>

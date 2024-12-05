@@ -103,8 +103,10 @@ const EditMovie = ({ route, navigation }) => {
               style={[styles.input, {flex: 1, marginBottom: 20}, isFocused.genres && styles.isFocused]}
               value={newGenre}
               onChangeText={setNewGenre}
-            />
-            <Button color="#ff0000" title="Thêm" onPress={handleAddGenre} />
+            />            
+            <TouchableOpacity onPress={handleAddGenre} style={styles.addButton2}>
+              <Text style={styles.addButtonText}>Thêm</Text>
+            </TouchableOpacity>
           </View>
           <FlatList
             horizontal
@@ -249,6 +251,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 10,
     alignItems: 'center',
+  },
+  addButton2: {
+    justifyContent: 'center', // Căn giữa theo chiều dọc
+    alignItems: 'center',     // Căn giữa theo chiều ngang
+    padding: 10,              // Tùy chỉnh khoảng cách bên trong
+  },
+  addButtonText: {
+    color: '#ff0000',         // Màu chữ đỏ
+    fontWeight: 'bold',       // Làm chữ đậm (tùy chọn)
+    fontSize: 16,             // Kích thước chữ (tùy chỉnh theo nhu cầu)
   },
 });
 

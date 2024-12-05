@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, View, Text, TextInput, Button, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, FlatList, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import {Keyboard} from 'react-native';
+import { Keyboard } from 'react-native';
 import { API_URL } from '@env';
 import { format } from 'date-fns';
 import axios from 'axios';
@@ -54,12 +54,12 @@ const AddMovie = ({ navigation }) => {
       imdbRating: parseFloat(imdbRating),
       rottenTomatoesRating: parseInt(rottenTomatoesRating, 10),
     })
-    .then(() => {
-      alert('Phim đã được thêm thành công!');
-    })
-    .catch(error => {
-      console.error(error);
-    });
+      .then(() => {
+        alert('Phim đã được thêm thành công!');
+      })
+      .catch(error => {
+        console.error(error);
+      });
     navigation.goBack();
   };
 
@@ -71,16 +71,16 @@ const AddMovie = ({ navigation }) => {
           <TextInput
             onFocus={() => setIsFocused({ ...isFocused, title: true })}
             onBlur={() => setIsFocused({ ...isFocused, title: false })}
-            style={[styles.input, isFocused.title && styles.isFocused]} 
-            value={title} onChangeText={setTitle} 
+            style={[styles.input, isFocused.title && styles.isFocused]}
+            value={title} onChangeText={setTitle}
           />
 
           <Text style={styles.inputLabel}>Mô tả</Text>
           <TextInput
             onFocus={() => setIsFocused({ ...isFocused, description: true })}
             onBlur={() => setIsFocused({ ...isFocused, description: false })}
-            style={[styles.input, isFocused.description && styles.isFocused, {height: 80}]} 
-            value={description} onChangeText={setDescription} 
+            style={[styles.input, isFocused.description && styles.isFocused, { height: 80 }]}
+            value={description} onChangeText={setDescription}
             multiline
           />
 
@@ -99,11 +99,13 @@ const AddMovie = ({ navigation }) => {
             <TextInput
               onFocus={() => setIsFocused({ ...isFocused, genres: true })}
               onBlur={() => setIsFocused({ ...isFocused, genres: false })}
-              style={[styles.input, {flex: 1, marginBottom: 20}, isFocused.genres && styles.isFocused]}
+              style={[styles.input, { flex: 1, marginBottom: 20 }, isFocused.genres && styles.isFocused]}
               value={newGenre}
               onChangeText={setNewGenre}
             />
-            <Button color="#ff0000" title="Thêm" onPress={handleAddGenre} />
+            <TouchableOpacity onPress={handleAddGenre} style={styles.addButton2}>
+              <Text style={styles.addButtonText}>Thêm</Text>
+            </TouchableOpacity>
           </View>
           <FlatList
             horizontal
@@ -138,27 +140,27 @@ const AddMovie = ({ navigation }) => {
             value={rottenTomatoesRating}
             onChangeText={setRottenTomatoesRating}
           />
-          
+
           <Text style={styles.inputLabel}>Link poster</Text>
-          <TextInput 
+          <TextInput
             onFocus={() => setIsFocused({ ...isFocused, posterUrl: true })}
             onBlur={() => setIsFocused({ ...isFocused, posterUrl: false })}
-            style={[styles.input, isFocused.posterUrl && styles.isFocused]} 
-            keyboardType='url' 
-            value={posterUrl} 
-            onChangeText={setPosterUrl} 
+            style={[styles.input, isFocused.posterUrl && styles.isFocused]}
+            keyboardType='url'
+            value={posterUrl}
+            onChangeText={setPosterUrl}
           />
-          
+
           <Text style={styles.inputLabel}>Link trailer</Text>
-          <TextInput 
+          <TextInput
             onFocus={() => setIsFocused({ ...isFocused, trailerUrl: true })}
             onBlur={() => setIsFocused({ ...isFocused, trailerUrl: false })}
-            style={[styles.input, isFocused.trailerUrl && styles.isFocused]} 
-            keyboardType='url' 
-            value={trailerUrl} 
-            onChangeText={setTrailerUrl} 
+            style={[styles.input, isFocused.trailerUrl && styles.isFocused]}
+            keyboardType='url'
+            value={trailerUrl}
+            onChangeText={setTrailerUrl}
           />
-          
+
           <Text style={styles.inputLabel}>Ngày phát hành</Text>
           <TouchableOpacity
             style={styles.datePicker}
@@ -172,7 +174,7 @@ const AddMovie = ({ navigation }) => {
             <DateTimePicker
               value={releaseDate}
               mode="date"
-              style={{marginBottom: 40, marginRight: 231, backgroundColor: '#808080'}}
+              style={{ marginBottom: 40, marginRight: 231, backgroundColor: '#808080' }}
               onChange={handleDateChange}
             />
           )}
@@ -211,6 +213,7 @@ const styles = StyleSheet.create({
   },
   genreInputContainer: {
     flexDirection: 'row',
+    justifyContent: 'center'
   },
   genreItem: {
     flexDirection: 'column',
@@ -248,6 +251,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 10,
     alignItems: 'center',
+  },
+  addButton2: {
+    justifyContent: 'center', // Căn giữa theo chiều dọc
+    alignItems: 'center',     // Căn giữa theo chiều ngang
+    padding: 10,              // Tùy chỉnh khoảng cách bên trong
+  },
+  addButtonText: {
+    color: '#ff0000',         // Màu chữ đỏ
+    fontWeight: 'bold',       // Làm chữ đậm (tùy chọn)
+    fontSize: 16,             // Kích thước chữ (tùy chỉnh theo nhu cầu)
   },
 });
 

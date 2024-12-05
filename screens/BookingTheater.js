@@ -86,7 +86,8 @@ const Booking = ({ route, navigation }) => {
     }
 
     const formattedShowtimes = Object.entries(data.showtimes).map(([id, showtime]) => {
-      const startTime = dayjs.utc(showtime.start_time).tz('Asia/Bangkok').add(7, 'hour');;
+      const startTime = dayjs.utc(showtime.start_time).tz('Asia/Bangkok').add(7, 'hour');
+      console.log(startTime, startTime.format('YYYY-MM-DD'))
   
       // Kiểm tra xem startTime có hợp lệ không
       if (isNaN(startTime)) {

@@ -27,7 +27,7 @@ API_URL = os.getenv("API_URL")
 app = FastAPI()
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(r"C:\Users\user\.vscode\code\IE307\project\MovieBookingApp\moviebookingapp-435cc-firebase-adminsdk-hjrcs-41cbbc379c.json")
+    cred = credentials.Certificate(r"D:\da_nen_tang\moviebookingapp-435cc-firebase-adminsdk-hjrcs-ce75e87f0f.json")
     firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -141,14 +141,70 @@ async def get_movies():
   return movie_list
 
 
+@app.get("/movies/all", response_model=List[Movie])
+async def get_all_movies():
+    movies_ref = db.collection("movies").stream()
+    all_movies = []
+
+    for movie_doc in movies_ref:
+        movie_data = movie_doc.to_dict()
+        movie_data["id"] = movie_doc.id  # Add movie ID to the response
+
+        # Fetch showtimes subcollection
+        showtimes_ref = db.collection("movies").document(movie_doc.id).collection("showtimes").stream()
+        showtimes = [showtime_doc.to_dict() for showtime_doc in showtimes_ref]
+
+        # Attach showtimes to the movie data
+        movie_data["showtimes"] = showtimes
+        all_movies.append(movie_data)
+
+    return all_movies
+
+from datetime import timezone
+
+@app.get("/movies/upcoming", response_model=List[Dict])
+async def get_upcoming_movies():
+    """
+    API trả về danh sách phim chỉ với showtimes có start_time > thời gian hiện tại (GMT+7).
+    Tất cả thời gian start_time được chuyển sang múi giờ GMT+7.
+    """
+    try:
+        current_time = datetime.utcnow().replace(tzinfo=timezone.utc) + timedelta(hours=7)  # Lấy thời gian hiện tại (GMT+7)
+        movies_ref = db.collection("movies").stream()
+        upcoming_movies = []
+
+        for movie_doc in movies_ref:
+            movie_data = movie_doc.to_dict()
+            movie_data["id"] = movie_doc.id  # Thêm movie ID vào dữ liệu
+            filtered_showtimes = []
+
+            # Lấy subcollection `showtimes`
+            showtimes_ref = db.collection("movies").document(movie_doc.id).collection("showtimes").stream()
+            for showtime_doc in showtimes_ref:
+                showtime_data = showtime_doc.to_dict()
+
+                # Chuyển `start_time` sang offset-aware và GMT+7
+                start_time = datetime.fromisoformat(showtime_data["start_time"].replace("Z", "+00:00")).astimezone(timezone.utc) + timedelta(hours=7)
+                showtime_data["start_time"] = start_time.isoformat()
+
+                # Chuyển `end_time` sang offset-aware và GMT+7
+                end_time = datetime.fromisoformat(showtime_data["end_time"].replace("Z", "+00:00")).astimezone(timezone.utc) + timedelta(hours=7)
+                showtime_data["end_time"] = end_time.isoformat()
+
+                # Kiểm tra nếu `start_time` > `current_time`
+                if start_time > current_time:
+                    filtered_showtimes.append(showtime_data)
+
+            if filtered_showtimes:
+                # movie_data["showtimes"] = filtered_showtimes
+                upcoming_movies.append(movie_data)
+
+        return upcoming_movies
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
 # 2. Lấy thông tin chi tiết của một phim
-# @app.get("/movies/{movie_id}", response_model=Movie)
-# async def get_movie(movie_id: str):
-#     movie_ref = db.collection('movies').document(movie_id)
-#     movie = movie_ref.get()
-#     if movie.exists:
-#         return movie.to_dict()
-#     raise HTTPException(status_code=404, detail="Movie not found")
 @app.get("/movies/{movie_id}", response_model=Movie)
 async def get_movie(movie_id: str):
     # Truy vấn tài liệu movie từ Firestore
@@ -225,19 +281,8 @@ async def get_tickets():
 
   return ticket_list
 
-#Delete Ticket
-@app.delete("/tickets/{ticket_id}", response_model=str)
-async def delete_ticket(ticket_id: str, admin: bool = Depends(get_current_admin_user)):
-  if not admin:
-      raise HTTPException(status_code=403, detail="Not authorized")
-  ticket_ref = db.collection('tickets').document(ticket_id)
-  if not ticket_ref.get().exists:
-      raise HTTPException(status_code=404, detail="Ticket not found")
-  ticket_ref.delete()
-  return ticket_id
-
 #Get users
-@app.get("/users", response_model=List[User])
+@app.get("/users", response_model=List[Dict])
 async def get_users():
   users_ref = db.collection('users').get()
   user_list = []
@@ -554,7 +599,7 @@ async def create_payment_link(payment_request: PaymentRequest):
         # Tạo liên kết thanh toán
         payment_data = PaymentData(
             orderCode=payment_request.order_id,
-            amount=payment_request.amount,
+            amount= 2000, #payment_request.amount,
             description=payment_request.description,
             cancelUrl=f"{API_URL}/cancel",
             returnUrl=f"{API_URL}/success"
@@ -653,32 +698,76 @@ async def get_user(user_id: str):
     return user.to_dict()
 
 # 12. API Xem Vé Của Người Dùng
+
 @app.get("/tickets/{user_id}", response_model=List[Dict])
 async def get_user_tickets(user_id: str):
     """
     API để xem thông tin các vé của người dùng.
     Lấy dữ liệu từ collection `tickets` và trả về danh sách vé.
     """
-    bookings_ref = db.collection('tickets').where('user_id', '==', user_id).stream()
+    # Lấy tất cả vé của user từ Firestore
+    tickets_ref = db.collection('tickets').where('user_id', '==', user_id).stream()
 
     tickets = []
-    for booking in bookings_ref:
-        booking_data = booking.to_dict()
-        
-        # Tách từng vé từ thông tin booking
-        for seat in booking_data["seats"]:
-            ticket = {
-                "user_id": booking_data["user_id"],
-                "movie_title": booking_data["movie_title"],
-                "cinema_name": booking_data["cinema_name"],
-                "showtime": booking_data["showtime"],
-                "seat_number": seat,
-                "total_price": booking_data["total_price"],  # Có thể chia đều theo số ghế nếu cần
-                "created_at": booking_data.get("created_at")
-            }
-            tickets.append(ticket)
+    for ticket in tickets_ref:
+        ticket_data = ticket.to_dict()
 
+        # Đảm bảo các trường cần thiết tồn tại trong dữ liệu và bổ sung ID
+        ticket = {
+            "id": ticket.id,  # Bổ sung ID của tài liệu
+            "user_id": ticket_data.get("user_id", ""),
+            "movie_title": ticket_data.get("movie_title", ""),
+            "cinema_name": ticket_data.get("cinema_name", ""),
+            "showtime": ticket_data.get("showtime", ""),
+            "seat_number": ticket_data.get("seat_number", ""),
+            "status": ticket_data.get("status", 0),
+            "price": ticket_data.get("price", 0),
+            "created_at": ticket_data.get("created_at", None),
+            "updated_at": ticket_data.get("updated_at", None),
+            "cancel_reason": ticket_data.get("cancel_reason", ""),
+        }
+
+        tickets.append(ticket)
+
+    # Trả về danh sách vé
     return tickets
+
+@app.delete("/tickets/{ticket_id}", response_model=Dict)
+async def delete_ticket(ticket_id: str):
+    """
+    API để xóa một vé.
+    Trước khi xóa, thêm điểm thưởng vào tài khoản người dùng dựa trên giá vé.
+    """
+    # Lấy thông tin vé từ Firestore
+    ticket_ref = db.collection('tickets').document(ticket_id)
+    ticket = ticket_ref.get()
+
+    if not ticket.exists:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    ticket_data = ticket.to_dict()
+    user_id = ticket_data["user_id"]
+    price = ticket_data["price"]
+
+    # Tính điểm thưởng
+    result = int(price / 20000)
+
+    # Cập nhật điểm của người dùng
+    user_ref = db.collection('users').document(user_id)
+    user = user_ref.get()
+
+    if not user.exists:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_data = user.to_dict()
+    updated_points = user_data.get("point", 0) + result
+    user_ref.update({"point": updated_points})
+
+    # Xóa vé
+    ticket_ref.delete()
+
+    return {"message": f"Ticket {ticket_id} deleted successfully", "points_added": result}
+
 
 # Model cho Login
 class LoginRequest(BaseModel):
@@ -792,6 +881,34 @@ async def get_movie_stats(start_date: datetime, end_date: datetime):
         stats[movie_id]["tickets_sold"] += 1
 
     return {"stats": list(stats.values())}
+
+
+#15. API Cập Nhật Mật Khẩu
+class PasswordUpdateRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+@app.put("/users/{user_id}/update-password")
+async def update_password(user_id: str, password_data: PasswordUpdateRequest):
+    """
+    API để người dùng thay đổi mật khẩu.
+    """
+    user_ref = db.collection('users').document(user_id)
+    user = user_ref.get()
+
+    if not user.exists:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_data = user.to_dict()
+
+    # Kiểm tra mật khẩu cũ
+    if user_data["password"] != password_data.old_password:
+        raise HTTPException(status_code=400, detail="Incorrect old password")
+
+    # Cập nhật mật khẩu mới
+    user_ref.update({"password": password_data.new_password})
+
+    return {"message": "Password updated successfully"}
 
 if __name__ == "__main__":
     import uvicorn
